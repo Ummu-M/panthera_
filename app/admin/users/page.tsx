@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../lib/auth'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export default async function UsersPage() {
   const session = await getServerSession(authOptions as any)
   const role = (session as any)?.user?.role
