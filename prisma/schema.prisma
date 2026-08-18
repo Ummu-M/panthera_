@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Use UUIDs for primary keys and include timestamps
+model Role {
+  id        String  @id @default(uuid())
+  name      String  @unique
+  label     String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  roleId        String?
+  role          Role?    @relation(fields: [roleId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  // Additional member fields
+  registrationNumber String? @unique
+  phone              String?
+  school             String?
+  course             String?
+  yearOfStudy        Int?
+  dateJoined         DateTime?
+  membershipStatus   String?
+  registrationFeePaid Boolean @default(false)
+
+  accounts Account[]
+  sessions Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Additional domain models (skeletons)
+model Event {
+  id        String   @id @default(uuid())
+  title     String
+  description String?
+  startAt   DateTime
+  endAt     DateTime
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  category  String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

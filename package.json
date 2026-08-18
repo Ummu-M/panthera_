@@ -1,0 +1,38 @@
+{
+  "name": "panthera-project",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "seed": "tsx prisma/seed.ts",
+    "dev:full": "next dev",
+    "server": "node server/index.js"
+  },
+  "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.0",
+    "@prisma/client": "^5.16.3",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.0",
+    "lucide-react": "^1.31.0",
+    "mongodb": "^7.4.0",
+    "next": "14.2.15",
+    "next-auth": "4.24.7",
+    "pg": "^8.10.0",
+    "prisma": "^5.16.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tsx": "^4.20.3"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^22.15.29",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.7.3"
+  }
+}
