@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Use UUIDs for primary keys and include timestamps
@@ -79,11 +80,21 @@ model VerificationToken {
 
 // Additional domain models (skeletons)
 model Event {
-  id        String   @id @default(uuid())
-  title     String
+  id          String   @id @default(uuid())
+  title       String
+  tag         String?
   description String?
-  startAt   DateTime
-  endAt     DateTime
+  startAt     DateTime
+  endAt       DateTime
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  url       String   @db.Text
+  caption   String?
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

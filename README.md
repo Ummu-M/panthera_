@@ -42,14 +42,15 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 2. Create a `.env` file in the project root:
 
    ```env
-   DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+   DATABASE_URL="postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+   DIRECT_URL="postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
    NEXTAUTH_SECRET="replace-with-a-long-random-secret"
    GOOGLE_CLIENT_ID="your-google-client-id"
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
    ADMIN_EMAIL="admin@example.com"
    ```
 
-   For Supabase, use a connection pooler URL when the direct database endpoint is not reachable from your network. Keep `.env` private and never commit credentials.
+   `DATABASE_URL` uses Supabase's IPv4 shared transaction pooler. `DIRECT_URL` uses the session-mode pooler for Prisma migration commands. Keep `.env` private and never commit credentials.
 
 3. Generate the Prisma client and apply the schema:
 
