@@ -10,12 +10,12 @@ const rolePermissions: Record<string, string[]> = {
   MEMBER: ['dashboard', 'profile', 'events'],
   SECRETARY: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/gallery', 'admin/badges'],
   RSL: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/gallery', 'admin/badges', 'admin/treasury', 'admin/inventory'],
-  OG: ['events', 'dashboard'],
-  TREASURER: ['treasury', 'admin/treasury', 'dashboard'],
-  QUARTERMASTER: ['inventory', 'admin/inventory', 'dashboard'],
-  DISCIPLINARIAN: ['discipline', 'dashboard'],
-  CREW_LEADER: ['dashboard', 'reports'],
-  ASSISTANT_CREW_LEADER: ['dashboard', 'reports']
+  OG: ['events', 'dashboard', 'profile'],
+  TREASURER: ['treasury', 'admin/treasury', 'dashboard', 'profile'],
+  QUARTERMASTER: ['inventory', 'admin/inventory', 'dashboard', 'profile'],
+  DISCIPLINARIAN: ['discipline', 'dashboard', 'profile'],
+  CREW_LEADER: ['dashboard', 'reports', 'profile'],
+  ASSISTANT_CREW_LEADER: ['dashboard', 'reports', 'profile']
 }
 
 function hasAccess(role: string | undefined, pathname: string) {
@@ -33,7 +33,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  if (pathname === '/' || pathname === '/access-denied') {
+  if (pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/access-denied') {
     return NextResponse.next()
   }
 
