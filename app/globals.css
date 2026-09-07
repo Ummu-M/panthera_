@@ -81,6 +81,10 @@ img {
     grid-template-columns: 1fr !important;
   }
 
+  .responsive-form {
+    grid-template-columns: 1fr !important;
+  }
+
   .site-nav {
     padding: 8px 12px !important;
   }

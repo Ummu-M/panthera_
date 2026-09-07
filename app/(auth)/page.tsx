@@ -462,7 +462,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <section style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 24, alignItems: 'center', paddingBottom: 30 }}>
+        <section className="responsive-split" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 24, alignItems: 'center', paddingBottom: 30 }}>
           <div>
             <div style={{ fontSize: 12, letterSpacing: '0.22em', color: C.gold500, textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Kenyatta University Scout Crew</div>
             <h1 style={{ margin: '0 0 16px', fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', lineHeight: 1.1, color: C.text, fontFamily: 'var(--font-display)', fontWeight: 500 }}>
@@ -504,7 +504,7 @@ export default function AuthPage() {
         </section>
 
         <section style={{ paddingBottom: 34 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
+          <div className="responsive-split" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8, color: C.text }}>
               Kenyatta University Panthera Rover Crew is built on service, adventure, leadership, and mentorship. We run volunteer projects, trainings, and expeditions that take Scouting beyond the classroom — and community outreach that puts it to work.
             </p>
@@ -582,11 +582,11 @@ export default function AuthPage() {
           {isAdmin && (
             <div style={{ ...panelStyle, padding: 18 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>{editingEventId ? 'Edit event' : 'Add an event'}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 10 }}>
+              <div className="responsive-form" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 10 }}>
                 <input value={eventForm.title} onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))} placeholder="Event title" style={inputStyle} />
                 <input value={eventForm.tag} onChange={(e) => setEventForm((f) => ({ ...f, tag: e.target.value }))} placeholder="Tag (e.g. Camp)" style={inputStyle} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <div className="responsive-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <input type="date" value={eventForm.startAt} onChange={(e) => setEventForm((f) => ({ ...f, startAt: e.target.value }))} style={inputStyle} />
                 <input type="date" value={eventForm.endAt} onChange={(e) => setEventForm((f) => ({ ...f, endAt: e.target.value }))} style={inputStyle} />
               </div>
