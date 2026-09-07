@@ -19,14 +19,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
-      const { amount, type, status, userId } = req.body || {}
-      if (!amount) return res.status(400).json({ error: 'Amount is required' })
+      const { amount, type, purpose, userId } = req.body || {}
+      if (!amount || !purpose) return res.status(400).json({ error: 'Amount and purpose are required' })
 
       const payment = await prisma.payment.create({
         data: {
           amount: Number(amount),
           category: type === 'expense' ? 'EXPENSE' : 'INCOME',
-          purpose: null,
+          purpose: String(purpose),
           type: type === 'expense' ? 'expense' : 'income',
           status: String(status || 'recorded'),
           userId: String(userId || (session as any).user.email)
@@ -36,9 +36,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'PATCH' || req.method === 'PUT') {
-      const { id, amount, category, purpose, type, status } = req.body || {}
+      const { id, amount, purpose, type } = req.body || {}
       if (!id) return res.status(400).json({ error: 'Payment id is required' })
-      const payment = await prisma.payment.update({ where: { id: String(id) }, data: { ...(amount !== undefined ? { amount: Number(amount) } : {}), ...(category !== undefined ? { category: String(category) } : {}), ...(purpose !== undefined ? { purpose: String(purpose) } : {}), ...(type !== undefined ? { type: type === 'expense' ? 'expense' : 'income' } : {}), ...(status !== undefined ? { status: String(status) } : {}) } })
+      const payment = await prisma.payment.update({ where: { id: String(id) }, data: { ...(amount !== undefined ? { amount: Number(amount) } : {}), ...(purpose !== undefined ? { purpose: String(purpose) } : {}), ...(type !== undefined ? { type: type === 'expense' ? 'expense' : 'income', category: type === 'expense' ? 'EXPENSE' : 'INCOME' } : {}) } })
       return res.status(200).json(payment)
     }
 

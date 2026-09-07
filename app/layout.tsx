@@ -6,7 +6,8 @@ import SiteNav from './components/SiteNav'
 
 export const metadata: Metadata = {
   title: 'Kenyatta University Panthera Rover Crew',
-  description: 'Kenyatta University Panthera Rover Crew member platform'
+  description: 'Kenyatta University Panthera Rover Crew member platform',
+  manifest: '/manifest.json'
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

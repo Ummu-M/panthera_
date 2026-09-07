@@ -15,12 +15,7 @@ export default async function TreasuryPage() {
     return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.forest950, color: C.text }}>Access denied</main>
   }
 
-  const currentYear = new Date().getFullYear()
-  const [payments, feePayers] = await Promise.all([
-    prisma.payment.findMany({ orderBy: { createdAt: 'desc' } }),
-    prisma.user.findMany({ where: { registrationFeePaid: true, registrationFeeYear: currentYear }, select: { registrationFeeAmount: true } })
-  ])
-  const registrationFeeTotal = feePayers.reduce((total, user) => total + Number(user.registrationFeeAmount || 100), 0)
+  const payments = await prisma.payment.findMany({ orderBy: { createdAt: 'desc' } })
 
   return (
     <main style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
@@ -32,7 +27,7 @@ export default async function TreasuryPage() {
           </div>
           <Link href="/admin" style={{ color: C.forest950, background: C.gold500, borderRadius: 8, padding: '10px 14px', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>Back to admin</Link>
         </header>
-        <TreasuryPanel initialPayments={payments.map((payment) => ({ ...payment, createdAt: payment.createdAt.toISOString() }))} registrationFeeCount={feePayers.length} registrationFeeTotal={registrationFeeTotal} />
+        <TreasuryPanel initialPayments={payments.map((payment) => ({ ...payment, createdAt: payment.createdAt.toISOString() }))} />
       </div>
     </main>
   )
