@@ -7,14 +7,14 @@
   "theme_color": "#287fba",
   "icons": [
     {
-      "src": "/pantheralogo.png",
+      "src": "/scoutlogo.jpg",
       "sizes": "any",
-      "type": "image/png"
+      "type": "image/jpeg"
     },
     {
-      "src": "/pantheralogo.png",
+      "src": "/scoutlogo.jpg",
       "sizes": "any",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }
