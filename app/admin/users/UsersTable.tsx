@@ -17,6 +17,8 @@ const ROLE_OPTIONS = [
   ['ASSISTANT_CREW_LEADER', 'Assistant Crew Leader']
 ]
 
+const ADMIN_ROLE_OPTION = ['SYSTEM_ADMIN', 'System Administrator']
+
 type Member = {
   id: string
   roleId: string | null
@@ -34,7 +36,7 @@ type Member = {
   registrationFeeAmount: number | null
 }
 
-export default function UsersTable({ initialUsers }: { initialUsers: Member[] }) {
+export default function UsersTable({ initialUsers, actorRole }: { initialUsers: Member[]; actorRole: string }) {
   const [users, setUsers] = useState(initialUsers)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -127,7 +129,7 @@ export default function UsersTable({ initialUsers }: { initialUsers: Member[] })
                 <td style={{ padding: '14px 18px', borderBottom: '1px solid rgba(18,36,53,0.06)', fontSize: 13.5 }}>{user.course || '—'}</td>
                 <td style={{ padding: '14px 18px', borderBottom: '1px solid rgba(18,36,53,0.06)', fontSize: 13.5 }}>
                   <select value={user.role || 'MEMBER'} onChange={(event) => assignRole(user.id, event.target.value, event.target.value)} style={{ border: `1px solid ${C.border}`, borderRadius: 7, padding: '7px 8px', color: C.text, background: '#f7fbfe' }}>
-                    {ROLE_OPTIONS.map(([name, label]) => <option key={name} value={name}>{label}</option>)}
+                    {(actorRole === 'SYSTEM_ADMIN' ? [ADMIN_ROLE_OPTION, ...ROLE_OPTIONS] : ROLE_OPTIONS).map(([name, label]) => <option key={name} value={name}>{label}</option>)}
                   </select>
                 </td>
                 <td style={{ padding: '14px 18px', borderBottom: '1px solid rgba(18,36,53,0.06)', fontSize: 13.5 }}>{user.membershipStatus || '—'}</td>

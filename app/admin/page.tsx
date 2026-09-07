@@ -101,7 +101,7 @@ export default async function UsersPage() {
 
         <section style={{ marginTop: 28 }}>
           <h2 style={{ margin: '0 0 12px', fontSize: 19, color: C.text, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Applications and members</h2>
-          <UsersTable initialUsers={users.map((user) => ({
+          <UsersTable actorRole={role} initialUsers={users.map((user) => ({
             id: user.id,
             roleId: user.roleId,
             name: user.name,

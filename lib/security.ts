@@ -16,7 +16,7 @@ export function isSafeReportDataUrl(value: unknown) {
 }
 
 export function canAssignRole(actorRole: string, requestedRole: string) {
-  return actorRole === 'SYSTEM_ADMIN' && requestedRole !== 'SYSTEM_ADMIN'
+  return actorRole === 'SYSTEM_ADMIN' && requestedRole.length > 0
 }
 
 export function isSameOriginRequest(origin: string | undefined, host: string | undefined) {

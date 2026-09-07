@@ -20,6 +20,7 @@ test('rejects executable or malformed report URLs', () => {
 
 test('only system administrators can assign non-admin roles', () => {
   assert.equal(canAssignRole('SYSTEM_ADMIN', 'SECRETARY'), true)
+  assert.equal(canAssignRole('SYSTEM_ADMIN', 'SYSTEM_ADMIN'), true)
   assert.equal(canAssignRole('SECRETARY', 'TREASURER'), false)
   assert.equal(canAssignRole('RSL', 'SYSTEM_ADMIN'), false)
 })

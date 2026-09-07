@@ -36,7 +36,7 @@ export default async function UsersPage() {
           </div>
         </header>
 
-        <UsersTable initialUsers={users.map((user) => ({
+        <UsersTable actorRole={role} initialUsers={users.map((user) => ({
           id: user.id,
           roleId: user.roleId,
           name: user.name,
