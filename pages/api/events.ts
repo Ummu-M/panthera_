@@ -4,7 +4,7 @@ import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isSameOriginRequest } from '@/lib/security'
 
-const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
+const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL', 'OG']
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {

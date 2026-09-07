@@ -92,6 +92,7 @@ export default function AuthPage() {
   const role = (session as any)?.user?.role
   const membershipStatus = (session as any)?.user?.membershipStatus || 'not_started'
   const isAdmin = role === 'SYSTEM_ADMIN' || role === 'SECRETARY' || role === 'RSL'
+  const canManageEvents = isAdmin || role === 'OG'
   const isPending = role === 'PENDING' || membershipStatus === 'pending'
 
   // Events — fetched from /api/events, backed by the existing Event model.
@@ -255,10 +256,10 @@ export default function AuthPage() {
     if (isLoggedIn && isAdmin) {
       window.location.href = '/admin'
     }
-    if (isLoggedIn && !isAdmin && !isPending) {
+    if (isLoggedIn && !isAdmin && role !== 'OG' && !isPending) {
       window.location.href = '/dashboard'
     }
-  }, [isLoggedIn, isAdmin, isPending])
+  }, [isLoggedIn, isAdmin, isPending, role])
 
   // Send admins straight to the admin panel right after they land here
   // signed in — members still go to the regular dashboard. Once inside,
@@ -548,7 +549,7 @@ export default function AuthPage() {
           ) : events.length === 0 ? (
             <CrewEmptyState>The trail is quiet for now. New crew gatherings will appear here as soon as they are scheduled.</CrewEmptyState>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: isAdmin ? 20 : 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: canManageEvents ? 20 : 0 }}>
               {events.map((ev) => (
                 <div key={ev.id} style={{ ...panelStyle, padding: 18, position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 0, right: 0, width: 0, height: 0, borderStyle: 'solid', borderWidth: '0 22px 22px 0', borderColor: `transparent ${C.gold500} transparent transparent`, opacity: 0.85 }} />
@@ -564,7 +565,7 @@ export default function AuthPage() {
                     {new Date(ev.startAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                   {ev.description && <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{ev.description}</div>}
-                  {isAdmin && (
+                  {canManageEvents && (
                     <div style={{ position: 'absolute', top: 14, right: 28, display: 'flex', gap: 8 }}>
                       <button onClick={() => editEvent(ev)} aria-label={`Edit event: ${ev.title}`} title="Edit event" style={{ background: 'none', border: 'none', color: C.gold600, cursor: 'pointer', padding: 0, display: 'flex' }}>✎</button>
                       <button onClick={() => deleteEvent(ev.id)} aria-label={`Delete event: ${ev.title}`} title="Delete event" style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', padding: 0, display: 'flex' }}><Trash2 size={15} /></button>
@@ -575,7 +576,7 @@ export default function AuthPage() {
             </div>
           )}
 
-          {isAdmin && (
+          {canManageEvents && (
             <div style={{ ...panelStyle, padding: 18 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>{editingEventId ? 'Edit event' : 'Add an event'}</div>
               <div className="responsive-form" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 10 }}>
