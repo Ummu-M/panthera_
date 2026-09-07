@@ -19,14 +19,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
-      const { amount, category, purpose, type, status, userId } = req.body || {}
-      if (!amount || !category || !purpose) return res.status(400).json({ error: 'Amount, category, and purpose are required' })
+      const { amount, type, status, userId } = req.body || {}
+      if (!amount) return res.status(400).json({ error: 'Amount is required' })
 
       const payment = await prisma.payment.create({
         data: {
           amount: Number(amount),
-          category: String(category),
-          purpose: String(purpose),
+          category: type === 'expense' ? 'EXPENSE' : 'INCOME',
+          purpose: null,
           type: type === 'expense' ? 'expense' : 'income',
           status: String(status || 'recorded'),
           userId: String(userId || (session as any).user.email)
