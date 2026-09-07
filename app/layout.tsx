@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   description: 'Kenyatta University Panthera Rover Crew member platform',
   manifest: '/manifest.json',
   icons: {
-    icon: '/scoutlogo.jpg',
-    shortcut: '/scoutlogo.jpg',
-    apple: '/scoutlogo.jpg'
+    icon: '/icon-192.png',
+    shortcut: '/icon-192.png',
+    apple: '/icon-192.png'
   }
 }
 
@@ -19,8 +19,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/scoutlogo.jpg" type="image/jpeg" />
-        <link rel="apple-touch-icon" href="/scoutlogo.jpg" />
+        <link rel="icon" href="/icon-192.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
