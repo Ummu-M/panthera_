@@ -4,17 +4,12 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 
 async function resolveUserRole(email?: string | null) {
-  if (!email) return 'MEMBER'
+  if (!email) return 'PENDING'
 
   try {
-    const dbUser = await prisma.user.findUnique({
-      where: { email },
-      include: { role: true }
-    })
+    const isConfiguredAdmin = !!process.env.ADMIN_EMAIL && email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()
 
-    if (dbUser?.role?.name) return dbUser.role.name
-
-    if (process.env.ADMIN_EMAIL && email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()) {
+    if (isConfiguredAdmin) {
       const adminRole = await prisma.role.findUnique({ where: { name: 'SYSTEM_ADMIN' } })
       if (adminRole) {
         await prisma.user.upsert({
@@ -30,6 +25,24 @@ async function resolveUserRole(email?: string | null) {
       }
     }
 
+    const dbUser = await prisma.user.findUnique({
+      where: { email },
+      include: { role: true }
+    })
+
+    if (!dbUser) return 'PENDING'
+
+    const status = String(dbUser.membershipStatus || '').toLowerCase()
+    if (status === 'approved') {
+      return dbUser.role?.name || 'MEMBER'
+    }
+
+    if (status === 'pending' || status === 'rejected') {
+      return 'PENDING'
+    }
+
+    if (dbUser.role?.name) return dbUser.role.name
+
     const memberRole = await prisma.role.findUnique({ where: { name: 'MEMBER' } })
     if (memberRole) {
       await prisma.user.upsert({
@@ -43,11 +56,10 @@ async function resolveUserRole(email?: string | null) {
       })
     }
   } catch (err) {
-    // Keep sign-in/session usable when the database is temporarily unavailable.
     console.error('resolveUserRole error', err)
   }
 
-  return 'MEMBER'
+  return 'PENDING'
 }
 
 export const authOptions: NextAuthOptions = {
@@ -55,7 +67,8 @@ export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true
     })
   ],
   adapter: PrismaAdapter(prisma as any),
@@ -91,14 +104,21 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       const email = user?.email || token.email || (token as any)?.sub
       if (email) {
+        const dbUser = await prisma.user.findUnique({ where: { email } })
         token.role = await resolveUserRole(email)
+        token.membershipStatus = dbUser?.membershipStatus || 'not_started'
+        token.needsRegistration = !dbUser
       }
       return token
     },
     async session({ session, token }) {
-      const role = (token as any)?.role || 'MEMBER'
+      const role = (token as any)?.role || 'PENDING'
+      const membershipStatus = (token as any)?.membershipStatus || 'not_started'
+      const needsRegistration = !!(token as any)?.needsRegistration
       ;(session as any).user = (session as any).user || {}
       ;(session as any).user.role = role
+      ;(session as any).user.membershipStatus = membershipStatus
+      ;(session as any).user.needsRegistration = needsRegistration
       return session
     }
   }

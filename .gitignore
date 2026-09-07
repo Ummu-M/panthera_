@@ -24,8 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 
- node_modules
- .next
- .env
- .env.local
- .env.production
+node_modules
+.next
+.env
+.env.local
+.env.production

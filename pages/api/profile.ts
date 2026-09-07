@@ -14,13 +14,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PUT' || req.method === 'PATCH') {
-    const { name, phone, school, course, yearOfStudy, membershipStatus } = req.body || {}
+    const { name, registrationNumber, phone, school, course, yearOfStudy, membershipStatus } = req.body || {}
     const data: any = {}
     if (name !== undefined) data.name = name
+    if (registrationNumber !== undefined) data.registrationNumber = registrationNumber
     if (phone !== undefined) data.phone = phone
     if (school !== undefined) data.school = school
     if (course !== undefined) data.course = course
-    if (yearOfStudy !== undefined) data.yearOfStudy = Number(yearOfStudy)
+    if (yearOfStudy !== undefined) data.yearOfStudy = yearOfStudy === '' || yearOfStudy === null ? null : Number(yearOfStudy)
     if (membershipStatus !== undefined) data.membershipStatus = membershipStatus
 
     try {
@@ -29,6 +30,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (err: any) {
       // eslint-disable-next-line no-console
       console.error('profile update error', err)
+      if (err?.code === 'P2002') {
+        return res.status(409).json({ error: 'That KU registration number is already linked to another account.' })
+      }
       return res.status(500).json({ error: 'Unable to update profile' })
     }
   }

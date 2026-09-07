@@ -5,12 +5,14 @@ import { getToken } from 'next-auth/jwt'
 const PUBLIC_FILE = /\.(.*)$/
 
 const rolePermissions: Record<string, string[]> = {
+  PENDING: ['profile'],
   SYSTEM_ADMIN: ['*'],
   MEMBER: ['dashboard', 'profile', 'events'],
-  SECRETARY: ['members', 'dashboard', 'reports'],
+  SECRETARY: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/gallery', 'admin/badges'],
+  RSL: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/gallery', 'admin/badges', 'admin/treasury', 'admin/inventory'],
   OG: ['events', 'dashboard'],
-  TREASURER: ['treasury', 'dashboard'],
-  QUARTERMASTER: ['inventory', 'dashboard'],
+  TREASURER: ['treasury', 'admin/treasury', 'dashboard'],
+  QUARTERMASTER: ['inventory', 'admin/inventory', 'dashboard'],
   DISCIPLINARIAN: ['discipline', 'dashboard'],
   CREW_LEADER: ['dashboard', 'reports'],
   ASSISTANT_CREW_LEADER: ['dashboard', 'reports']

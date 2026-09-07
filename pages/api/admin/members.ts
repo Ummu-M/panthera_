@@ -1,127 +1,85 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-type TableRows = Record<string, any[]>
+const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
 
-function getValue(row: any, keys: string[], fallback: any = '') {
-  for (const key of keys) {
-    if (row?.[key] !== undefined && row?.[key] !== null && row?.[key] !== '') return row[key]
-  }
-  return fallback
-}
-
-function scoutId(row: any) {
-  return String(getValue(row, ['scout_id', 'scoutId', 'member_id', 'memberId', 'user_id', 'userId', 'id'], ''))
-}
-
-async function readTable(table: string) {
-  return prisma.$queryRawUnsafe<any[]>(`select * from ${table}`)
-}
-
-async function updateScout(id: string, data: Record<string, any>) {
-  const allowedFields = ['full_name', 'name', 'email', 'phone', 'patrol', 'rank', 'status', 'join_date']
-  const entries = Object.entries(data).filter(([key]) => allowedFields.includes(key))
-  if (!entries.length) return null
-
-  const assignments = entries.map(([key], index) => `"${key}" = $${index + 1}`).join(', ')
-  const values = entries.map(([, value]) => value)
-
-  const rows = await prisma.$queryRawUnsafe<any[]>(
-    `update scouts set ${assignments} where id = $${entries.length + 1} returning *`,
-    ...values,
-    id
-  )
-
-  return rows[0] || null
-}
-
-function normalizeMember(scout: any, rows: TableRows) {
-  const id = String(getValue(scout, ['id', 'scout_id', 'member_id']))
-  const attendanceRows = rows.attendance.filter((row) => scoutId(row) === id)
-  const duesRows = rows.dues.filter((row) => scoutId(row) === id)
-  const financeRows = rows.financial_records.filter((row) => scoutId(row) === id)
-  const scoutBadgeRows = rows.scout_badges.filter((row) => scoutId(row) === id)
-  const badgeById = new Map(rows.badges.map((badge) => [String(getValue(badge, ['id', 'badge_id'])), badge]))
-  const attended = attendanceRows.filter((row) => {
-    const status = String(getValue(row, ['status', 'attendance_status', 'present'], '')).toLowerCase()
-    return status === 'present' || status === 'attended' || status === 'true' || status === '1' || row.present === true
-  }).length
-  const attendancePercent = attendanceRows.length ? Math.round((attended / attendanceRows.length) * 100) : 0
-  const unpaidDues = duesRows.some((row) => String(getValue(row, ['status', 'payment_status', 'dues_status'], '')).toLowerCase() !== 'paid')
-  const paidDues = duesRows.some((row) => String(getValue(row, ['status', 'payment_status', 'dues_status'], '')).toLowerCase() === 'paid')
-
+// Rewritten against the real Prisma `User` model. The previous version of
+// this file queried tables (scouts, badges, attendance, dues) that were
+// never actually created in the database — patrol/rank/attendance/badges
+// data was never real. This version only surfaces fields that genuinely
+// exist on User: name, email, phone, school, course, yearOfStudy,
+// dateJoined, membershipStatus, and registrationFeePaid (used for Dues).
+function normalizeMember(user: any) {
   return {
-    id,
-    photoUrl: getValue(scout, ['photo_url', 'avatar_url', 'image', 'profile_photo']),
-    fullName: getValue(scout, ['full_name', 'name', 'first_name'], 'Unnamed member'),
-    email: getValue(scout, ['email', 'contact_email']),
-    phone: getValue(scout, ['phone', 'phone_number', 'contact_phone']),
-    patrol: getValue(scout, ['patrol', 'patrol_name'], 'Unassigned'),
-    rank: getValue(scout, ['rank', 'current_rank'], 'Unranked'),
-    joinDate: getValue(scout, ['join_date', 'joined_at', 'created_at']),
-    status: String(getValue(scout, ['status', 'membership_status'], 'active')).toLowerCase(),
-    duesStatus: unpaidDues ? 'unpaid' : paidDues ? 'paid' : String(getValue(scout, ['dues_status'], 'unpaid')).toLowerCase(),
-    attendancePercent,
-    badgesEarned: scoutBadgeRows.length,
-    rawScout: scout,
-    badgeHistory: scoutBadgeRows.map((row) => {
-      const badge = badgeById.get(String(getValue(row, ['badge_id', 'badgeId']))) || {}
-      return {
-        id: getValue(row, ['id']),
-        name: getValue(badge, ['name', 'title'], getValue(row, ['badge_name', 'name'], 'Badge')),
-        status: getValue(row, ['status', 'progress_status'], 'earned'),
-        earnedAt: getValue(row, ['earned_at', 'awarded_at', 'created_at'])
-      }
-    }),
-    attendanceHistory: attendanceRows.map((row) => ({
-      id: getValue(row, ['id']),
-      date: getValue(row, ['date', 'meeting_date', 'created_at']),
-      event: getValue(row, ['event_name', 'event', 'meeting'], 'Meeting'),
-      status: getValue(row, ['status', 'attendance_status'], row.present === true ? 'present' : 'absent')
-    })),
-    duesHistory: duesRows.map((row) => ({
-      id: getValue(row, ['id']),
-      period: getValue(row, ['period', 'term', 'month'], 'Dues'),
-      amount: getValue(row, ['amount', 'amount_due'], 0),
-      status: getValue(row, ['status', 'payment_status'], 'unpaid'),
-      paidAt: getValue(row, ['paid_at', 'payment_date'])
-    })),
-    paymentHistory: financeRows.map((row) => ({
-      id: getValue(row, ['id']),
-      date: getValue(row, ['date', 'created_at', 'paid_at']),
-      description: getValue(row, ['description', 'desc', 'memo', 'category'], 'Payment'),
-      amount: getValue(row, ['amount'], 0),
-      status: getValue(row, ['status'], 'recorded')
-    }))
+    id: user.id,
+    fullName: user.name || 'Unnamed member',
+    email: user.email,
+    phone: user.phone || '',
+    school: user.school || 'Unassigned',
+    course: user.course || '',
+    yearOfStudy: user.yearOfStudy ?? null,
+    joinDate: user.dateJoined || user.createdAt,
+    status: (user.membershipStatus || 'pending').toLowerCase(),
+    duesStatus: user.registrationFeePaid && user.registrationFeeYear === new Date().getFullYear() ? 'paid' : 'unpaid',
+    registrationFeeYear: user.registrationFeeYear,
+    registrationFeeAmount: user.registrationFeeAmount,
+    role: user.role?.label || user.role?.name || 'Member'
   }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const session = await getServerSession(req, res, authOptions as any)
+  const role = (session as any)?.user?.role
+
+  if (!session) return res.status(401).json({ error: 'Unauthorized' })
+  if (!ALLOWED_ROLES.includes(role)) return res.status(403).json({ error: 'Forbidden' })
+
   try {
     if (req.method === 'PATCH') {
       const { id, data } = req.body || {}
       if (!id || !data) return res.status(400).json({ error: 'Missing member id or data' })
-      const scout = await updateScout(String(id), data)
-      return res.status(200).json({ scout })
+
+      const allowedFields = ['name', 'email', 'phone', 'school', 'course', 'yearOfStudy', 'membershipStatus', 'registrationFeePaid', 'registrationFeeYear', 'registrationFeeAmount', 'registrationFeePaidAt', 'roleId']
+      const updateData: Record<string, any> = {}
+      for (const key of allowedFields) {
+        if (key in data) updateData[key] = data[key]
+      }
+
+      if (typeof data.roleId === 'string') {
+        const role = await prisma.role.findUnique({ where: { name: data.roleId } })
+        if (!role) return res.status(400).json({ error: 'Unknown role' })
+        updateData.roleId = role.id
+      }
+
+      const user = await prisma.user.update({
+        where: { id: String(id) },
+        data: updateData,
+        include: { role: true }
+      })
+
+      return res.status(200).json({ scout: normalizeMember(user) })
+    }
+
+    if (req.method === 'DELETE') {
+      const { id } = req.body || {}
+      if (!id) return res.status(400).json({ error: 'Member id is required' })
+      await prisma.user.delete({ where: { id: String(id) } })
+      return res.status(200).json({ ok: true })
     }
 
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-    const [scouts, badges, scoutBadges, attendance, dues, financialRecords] = await Promise.all([
-      readTable('scouts'),
-      readTable('badges'),
-      readTable('scout_badges'),
-      readTable('attendance'),
-      readTable('dues'),
-      readTable('financial_records')
-    ])
+    const users = await prisma.user.findMany({
+      include: { role: true },
+      orderBy: { createdAt: 'desc' }
+    })
 
-    const rows = { scouts, badges, scout_badges: scoutBadges, attendance, dues, financial_records: financialRecords }
-    const members = scouts.map((scout) => normalizeMember(scout, rows))
-
+    const members = users.map(normalizeMember)
     res.status(200).json({ members })
   } catch (err: any) {
     console.error('members api error', err)
-    res.status(500).json({ error: err?.message || 'Unable to load members from Neon' })
+    res.status(500).json({ error: err?.message || 'Unable to load members' })
   }
 }

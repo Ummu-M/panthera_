@@ -8,6 +8,7 @@ async function main() {
     { name: 'SYSTEM_ADMIN', label: 'System Administrator' },
     { name: 'MEMBER', label: 'Member' },
     { name: 'SECRETARY', label: 'Secretary' },
+    { name: 'RSL', label: 'Rover Scout Leader' },
     { name: 'OG', label: 'Organizing Secretary' },
     { name: 'TREASURER', label: 'Treasurer' },
     { name: 'QUARTERMASTER', label: 'Quartermaster' },
