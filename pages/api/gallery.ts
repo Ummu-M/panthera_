@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isSameOriginRequest } from '@/lib/security'
 
 const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
 
@@ -20,6 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const role = (session as any)?.user?.role
     if (!session) return res.status(401).json({ error: 'Unauthorized' })
     if (!ALLOWED_ROLES.includes(role)) return res.status(403).json({ error: 'Forbidden' })
+    if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
 
     if (req.method === 'POST') {
       const { url, caption } = req.body || {}

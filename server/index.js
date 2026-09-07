@@ -9,7 +9,13 @@ const PORT = Number(process.env.PORT || 3001);
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
 const DB_NAME = process.env.MONGODB_DB || "panthera";
 const STATE_ID = "app-state";
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET must be configured before starting the legacy server");
+}
+
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
 
 const DEFAULT_STATE = {
   pending: [],
@@ -107,7 +113,8 @@ async function readJsonBody(request) {
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": CORS_ORIGIN,
+    "Vary": "Origin",
     "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
     "Content-Type": "application/json",
@@ -199,17 +206,7 @@ const server = createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/auth/login" && request.method === "POST") {
-      const { email, name } = await readJsonBody(request);
-      if (!email) {
-        sendJson(response, 400, { error: "Email is required" });
-        return;
-      }
-      let user = await getUserByEmail(email);
-      if (!user) {
-        user = await createUser(email, name || email.split("@")[0]);
-      }
-      const token = issueToken(user);
-      sendJson(response, 200, { token, user });
+      sendJson(response, 410, { error: "Passwordless legacy login is disabled" });
       return;
     }
 

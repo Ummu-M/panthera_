@@ -11,6 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",
+    "test": "node --import tsx --test tests/**/*.test.ts",
     "dev:full": "next dev",
     "server": "node server/index.js"
   },

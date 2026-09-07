@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isSameOriginRequest, isSafeReportDataUrl } from '@/lib/security'
 
 const REVIEW_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
 
@@ -29,8 +30,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { badgeName, category, reportUrl, reportName } = req.body || {}
       if (!badgeName || !category || !reportUrl) return res.status(400).json({ error: 'Badge, category, and report are required' })
+      if (!isSafeReportDataUrl(reportUrl)) return res.status(400).json({ error: 'Report must be a supported PDF, Word document, or image under 10 MB' })
       const user = await prisma.user.findUnique({ where: { email } })
       if (!user) return res.status(404).json({ error: 'Account not found' })
       const completion = await prisma.badgeCompletion.upsert({
@@ -42,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'PATCH') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       if (!REVIEW_ROLES.includes(role)) return res.status(403).json({ error: 'Only the RSL or an administrator can review badges' })
       const { id, status } = req.body || {}
       if (!id || !['APPROVED', 'REJECTED'].includes(status)) return res.status(400).json({ error: 'Badge id and review status are required' })
@@ -50,6 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'DELETE') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { badgeName } = req.body || {}
       if (!badgeName) return res.status(400).json({ error: 'Badge name is required' })
       const user = await prisma.user.findUnique({ where: { email } })

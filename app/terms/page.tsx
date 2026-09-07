@@ -1,4 +1,5 @@
 import { theme } from '@/lib/theme'
+import Link from 'next/link'
 
 const C = theme
 
@@ -16,6 +17,11 @@ export default function TermsPage() {
             <div style={{ letterSpacing: '0.16em', fontSize: 10.5, color: C.gold500, textTransform: 'uppercase', fontWeight: 600 }}>Panthera Rover Crew</div>
             <h1 style={{ margin: '2px 0 0', fontSize: 25, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Terms of Service</h1>
           </div>
+          <nav aria-label="Legal navigation" style={{ marginLeft: 'auto', display: 'flex', gap: 12, fontSize: 12 }}>
+            <Link href="/" style={{ color: C.gold600 }}>Home</Link>
+            <Link href="/privacy" style={{ color: C.gold600 }}>Privacy</Link>
+            <Link href="/terms" style={{ color: C.text, fontWeight: 600 }}>Terms</Link>
+          </nav>
         </header>
 
         <div style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, marginTop: 24, boxShadow: '0 14px 36px rgba(18,36,53,0.08)', lineHeight: 1.75, fontSize: 14.5 }}>

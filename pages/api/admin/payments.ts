@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isSameOriginRequest } from '@/lib/security'
 
 const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'TREASURER', 'RSL']
 
@@ -19,6 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { amount, type, purpose, userId } = req.body || {}
       if (!amount || !purpose) return res.status(400).json({ error: 'Amount and purpose are required' })
 
@@ -28,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           category: type === 'expense' ? 'EXPENSE' : 'INCOME',
           purpose: String(purpose),
           type: type === 'expense' ? 'expense' : 'income',
-          status: String(status || 'recorded'),
+          status: 'recorded',
           userId: String(userId || (session as any).user.email)
         }
       })
@@ -36,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'PATCH' || req.method === 'PUT') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { id, amount, purpose, type } = req.body || {}
       if (!id) return res.status(400).json({ error: 'Payment id is required' })
       const payment = await prisma.payment.update({ where: { id: String(id) }, data: { ...(amount !== undefined ? { amount: Number(amount) } : {}), ...(purpose !== undefined ? { purpose: String(purpose) } : {}), ...(type !== undefined ? { type: type === 'expense' ? 'expense' : 'income', category: type === 'expense' ? 'EXPENSE' : 'INCOME' } : {}) } })
@@ -43,6 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'DELETE') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { id } = req.body || {}
       if (!id) return res.status(400).json({ error: 'Payment id is required' })
       await prisma.payment.delete({ where: { id: String(id) } })

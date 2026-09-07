@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canAssignRole, isSameOriginRequest } from '@/lib/security'
 
 const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
 
@@ -38,6 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (req.method === 'PATCH') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { id, data } = req.body || {}
       if (!id || !data) return res.status(400).json({ error: 'Missing member id or data' })
 
@@ -48,9 +50,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (typeof data.roleId === 'string') {
-        const role = await prisma.role.findUnique({ where: { name: data.roleId } })
-        if (!role) return res.status(400).json({ error: 'Unknown role' })
-        updateData.roleId = role.id
+        if (!canAssignRole(role, data.roleId)) return res.status(403).json({ error: 'Only the system administrator can assign roles' })
+        const requestedRole = await prisma.role.findUnique({ where: { name: data.roleId } })
+        if (!requestedRole) return res.status(400).json({ error: 'Unknown role' })
+        updateData.roleId = requestedRole.id
       }
 
       const user = await prisma.user.update({
@@ -63,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'DELETE') {
+      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { id } = req.body || {}
       if (!id) return res.status(400).json({ error: 'Member id is required' })
       await prisma.user.delete({ where: { id: String(id) } })

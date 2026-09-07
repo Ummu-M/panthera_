@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isSameOriginRequest } from '@/lib/security'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions as any)
@@ -14,7 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PUT' || req.method === 'PATCH') {
-    const { name, registrationNumber, phone, school, course, yearOfStudy, membershipStatus } = req.body || {}
+    if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
+    const { name, registrationNumber, phone, school, course, yearOfStudy } = req.body || {}
     const data: any = {}
     if (name !== undefined) data.name = name
     if (registrationNumber !== undefined) data.registrationNumber = registrationNumber
@@ -22,7 +24,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (school !== undefined) data.school = school
     if (course !== undefined) data.course = course
     if (yearOfStudy !== undefined) data.yearOfStudy = yearOfStudy === '' || yearOfStudy === null ? null : Number(yearOfStudy)
-    if (membershipStatus !== undefined) data.membershipStatus = membershipStatus
 
     try {
       const updated = await prisma.user.update({ where: { email }, data })
