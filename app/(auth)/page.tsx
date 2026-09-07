@@ -6,7 +6,7 @@ import {
   Calendar, Clock, MapPin, Mail, Music2, Users, Shield,
   Plus, Trash2, Tag, Image as ImageIcon, Upload
 } from 'lucide-react'
-import { FaInstagram } from 'react-icons/fa'
+import { FaInstagram, FaWhatsapp } from 'react-icons/fa'
 import { theme } from '@/lib/theme'
 import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 
@@ -663,6 +663,10 @@ export default function AuthPage() {
               <a href="mailto:kupantherascouts@gmail.com" style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.gold500, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
                 <Mail size={16} />
                 kupantherascouts@gmail.com
+              </a>
+              <a href="https://wa.me/254110370104" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.gold500, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
+                <FaWhatsapp size={16} />
+                WhatsApp
               </a>
               <a href="https://www.instagram.com/ku_scouts_panthera?igsh=a29lOHNrdGFpMHp1" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.gold500, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
                 <FaInstagram size={16} />
