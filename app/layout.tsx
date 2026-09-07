@@ -7,13 +7,20 @@ import SiteNav from './components/SiteNav'
 export const metadata: Metadata = {
   title: 'Kenyatta University Panthera Rover Crew',
   description: 'Kenyatta University Panthera Rover Crew member platform',
-  manifest: '/manifest.json'
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/pantheralogo.png',
+    shortcut: '/pantheralogo.png',
+    apple: '/pantheralogo.png'
+  }
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/pantheralogo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/pantheralogo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

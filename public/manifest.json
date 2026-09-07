@@ -8,12 +8,12 @@
   "icons": [
     {
       "src": "/pantheralogo.png",
-      "sizes": "192x192",
+      "sizes": "any",
       "type": "image/png"
     },
     {
       "src": "/pantheralogo.png",
-      "sizes": "512x512",
+      "sizes": "any",
       "type": "image/png"
     }
   ]
