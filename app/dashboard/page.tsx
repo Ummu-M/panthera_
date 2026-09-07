@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Home, Calendar, Star, User, Compass, BookOpen, Wrench, Stethoscope, Heart, Globe, Handshake, Apple, Smile, Users, Activity, AlertCircle, Droplet, Code, Leaf, Target } from 'lucide-react'
 import { theme } from '@/lib/theme'
+import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 
 const C = theme
 
@@ -131,7 +132,7 @@ export default function DashboardPage() {
         {/* Masthead — plain, no card chrome, like a letterhead rather than a widget */}
         <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <img src="/pantheralogo.png" alt="Panthera crest" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 3 }} />
+            <InitialsBadge name={userName} />
             <div>
               <div style={{ letterSpacing: '0.16em', fontSize: 10.5, color: C.gold500, textTransform: 'uppercase', fontWeight: 600 }}>
                 Kenyatta University Panthera Rover Crew
@@ -184,7 +185,7 @@ export default function DashboardPage() {
                 <h2 style={{ margin: '0 0 10px', fontSize: 24, fontWeight: 500 }}>Karibu, {userName}</h2>
                 <p style={{ margin: '0 0 22px', color: C.muted, lineHeight: 1.7, fontSize: 14, maxWidth: 480 }}>
                   {approvedBadges.length === 0 && events.length === 0
-                    ? 'Nothing recorded yet. Attendance, badge progress, and service hours will appear here as the crew secretary logs them.'
+                    ? 'Your register is ready for its first mark. Attendance, approved badges, and service hours will gather here as your crew journey grows.'
                     : `${events.length} event${events.length === 1 ? '' : 's'} attended and ${approvedBadges.length} badge${approvedBadges.length === 1 ? '' : 's'} earned to date.`}
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 1, background: 'rgba(18,36,53,0.08)' }}>
@@ -193,11 +194,11 @@ export default function DashboardPage() {
                     ['Events', 'Crew activities'],
                     ['Badges', 'Track progress'],
                     ['Service', 'Log hours']
-                  ].map(([title, text]) => (
-                    <div key={title} style={{ background: C.forest900, padding: '14px 16px' }}>
+                  ].map(([title, text], index) => (
+                    <CrewCard key={title} accent={index === 2} style={{ background: C.forest900, padding: '14px 16px', borderRadius: 0, boxShadow: 'none' }}>
                       <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>{title}</div>
                       <div style={{ color: C.muted, fontSize: 11.5 }}>{text}</div>
-                    </div>
+                    </CrewCard>
                   ))}
                 </div>
               </div>
@@ -212,10 +213,7 @@ export default function DashboardPage() {
         )}
 
         {tab === 'events' && (
-          <div style={{ padding: '48px 0', color: C.muted, borderTop: `1px solid rgba(18,36,53,0.08)` }}>
-            <div style={{ fontSize: 15, color: C.text, marginBottom: 4 }}>Nothing on the trail yet</div>
-            <div style={{ fontSize: 13 }}>Crew activities will appear here once they are scheduled.</div>
-          </div>
+          <CrewEmptyState>The trail is quiet for now. Crew activities will appear here when the next gathering is set.</CrewEmptyState>
         )}
 
         {tab === 'badges' && (

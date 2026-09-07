@@ -6,6 +6,7 @@ import { authOptions } from '../lib/auth'
 import { prisma } from '@/lib/prisma'
 import { theme } from '@/lib/theme'
 import UsersTable from './users/UsersTable'
+import { CrewCard, CrewEmptyState } from '../components/CrewCard'
 
 const C = theme
 
@@ -78,12 +79,12 @@ export default async function UsersPage() {
             ['Treasury balance', `KSh ${treasuryBalance.toLocaleString()}`],
             ['Inventory items', inventory.length],
             ['Needs repair', repairCount]
-          ].map(([label, value]) => <div key={label} style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}><div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.1em' }}>{label}</div><div style={{ color: C.text, fontSize: 24, marginTop: 6 }}>{value}</div></div>)}
+          ].map(([label, value], index) => <CrewCard key={label} accent={index === 0} style={{ padding: 16 }}><div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.1em' }}>{label}</div><div style={{ color: C.text, fontSize: 24, marginTop: 6 }}>{value}</div></CrewCard>)}
         </section>
 
         <section style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, marginTop: 20 }}>
           <h2 style={{ margin: '0 0 12px', fontSize: 19, color: C.text, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Recent activity</h2>
-          {recentActivity.length === 0 ? <div style={{ color: C.muted, fontSize: 13 }}>No activity recorded yet.</div> : recentActivity.map((item, index) => <div key={`${item.label}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderBottom: index === recentActivity.length - 1 ? 'none' : `1px solid ${C.border}`, fontSize: 13 }}><span>{item.label}</span><span style={{ color: C.muted, whiteSpace: 'nowrap' }}>{item.date.toLocaleDateString()}</span></div>)}
+          {recentActivity.length === 0 ? <CrewEmptyState>The command centre is ready. Member, treasury, and field activity will appear here as the crew gets moving.</CrewEmptyState> : recentActivity.map((item, index) => <div key={`${item.label}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderBottom: index === recentActivity.length - 1 ? 'none' : `1px solid ${C.border}`, fontSize: 13 }}><span>{item.label}</span><span style={{ color: C.muted, whiteSpace: 'nowrap' }}>{item.date.toLocaleDateString()}</span></div>)}
         </section>
 
         <section style={{ marginTop: 28 }}>

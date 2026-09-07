@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { FaInstagram } from 'react-icons/fa'
 import { theme } from '@/lib/theme'
+import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 
 const C = theme
 
@@ -524,18 +525,13 @@ export default function AuthPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
             {LEADERSHIP.map(({ role, name }) => (
-              <div key={role} style={{ ...panelStyle, padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}>
-                  <div style={{ position: 'absolute', inset: -3, borderRadius: '50%', border: `1px dashed ${C.border}` }} />
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(46,155,236,0.1)', border: `1.5px solid ${C.gold500}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users size={16} color={C.gold500} />
-                  </div>
-                </div>
+              <CrewCard key={role} accent={role === 'Crew Leader'} style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, minHeight: role === 'Crew Leader' ? 92 : 76 }}>
+                <InitialsBadge name={name} prominent={role === 'Crew Leader'} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>{name}</div>
                   <div style={{ fontSize: 11.5, color: C.muted, marginTop: 1 }}>{role}</div>
                 </div>
-              </div>
+              </CrewCard>
             ))}
           </div>
         </section>
@@ -550,7 +546,7 @@ export default function AuthPage() {
           {eventsLoading ? (
             <div style={{ color: C.muted, fontSize: 13 }}>Loading events…</div>
           ) : events.length === 0 ? (
-            <div style={{ ...panelStyle, padding: 20, color: C.muted, fontSize: 13.5 }}>No upcoming events yet. Check back soon.</div>
+            <CrewEmptyState>The trail is quiet for now. New crew gatherings will appear here as soon as they are scheduled.</CrewEmptyState>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: isAdmin ? 20 : 0 }}>
               {events.map((ev) => (
@@ -634,7 +630,7 @@ export default function AuthPage() {
               </div>
             ))}
             {!photosLoading && photos.length === 0 && (
-              <div style={{ color: C.muted, fontSize: 13 }}>No photos yet. An admin can add some below.</div>
+              <CrewEmptyState>No gallery stories have been shared yet. The first field moment will have a place here.</CrewEmptyState>
             )}
           </div>
 
