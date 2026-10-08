@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { ReactNode } from 'react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import Providers from './providers'
 import SiteNav from './components/SiteNav'
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SiteNav />
           {children}
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   )
