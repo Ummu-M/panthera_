@@ -330,10 +330,10 @@ function Landing({ setScreen, events = [], gallery = [] }) {
         </div>
         <div style={{ fontWeight: 900, fontSize: 30, color: C.gold, lineHeight: 1.1 }}>PANTHERA ROVER CREW</div>
         <div style={{ fontSize: 11, letterSpacing: ".22em", color: C.muted, textTransform: "uppercase", marginTop: 6 }}>
-          Rover Crew · Kenya
+          Rover Crew  
         </div>
         <div style={{ fontSize: 11, color: C.green, margin: "4px 0 14px", opacity: 0.9 }}>
-          Kenyatta University Scouts Troop
+          Kenyatta University Scouts 
         </div>
         <div style={{ background: "rgba(212,160,23,.07)", border: "1px solid rgba(212,160,23,.18)", borderRadius: 12, padding: "10px 14px", fontStyle: "italic", fontSize: 13, color: C.gold, marginBottom: 18 }}>
           "Scouting for the Young and the Young at Heart"
@@ -365,7 +365,7 @@ function Landing({ setScreen, events = [], gallery = [] }) {
       </div>
 
       <div style={{ padding: "18px 20px 20px" }}>
-        {/* Weekly Fellowship Card */}
+        {/* Meeting Card */}
         <div style={{ background: "rgba(61,214,140,.08)", border: "1px solid rgba(61,214,140,.3)", borderRadius: 12, padding: "12px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
           <MapPin size={24} color={C.green} />
           <div>
@@ -405,7 +405,7 @@ function Landing({ setScreen, events = [], gallery = [] }) {
           </div>
         )}
 
-        {/* Activities & Upcoming Events */}
+        {/* Upcoming Events */}
         <div style={S.secLabel}>Events & Schedule</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
           {events.length === 0 ? (
@@ -529,7 +529,7 @@ function Register({ setScreen, onRegister }) {
         <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Kenyatta University Scouts Crew</div>
       </div>
       <div style={{ padding: "18px 22px 40px" }}>
-        {[["name", "Full Name *", "e.g. Ummu Omar", "text"], ["email", "Email *", "your@email.com", "email"], ["phone", "Phone *", "+254 7XX XXX XXX", "tel"], ["regno", "School Reg. No. *", "e.g. I34/4793/2024", "text"]].map(([k, lbl, ph, type]) => (
+        {[["name", "Full Name *", "e.g. Ummu Omar", "text"], ["email", "Email *", "your@email.com", "email"], ["phone", "Phone *", "+254 XXX XXX XXX", "tel"], ["regno", "School Reg. No. *", "e.g. J31/4793/2024", "text"]].map(([k, lbl, ph, type]) => (
           <Field key={k} label={lbl}>
             <input style={S.input} type={type} placeholder={ph} value={f[k]} onChange={set(k)} />
           </Field>
@@ -621,9 +621,8 @@ function AdminHome({ pending, scouts, finances, inventory }) {
   );
 }
 
-// ══════════════════════════════════════════════
+
 //  ADMIN · EVENTS & MEDIA (File Picker & Creator)
-// ══════════════════════════════════════════════
 function AdminEvents({ events = [], setEvents, gallery = [], setGallery }) {
   const [eventModal, setEventModal] = useState(false);
   const [galleryModal, setGalleryModal] = useState(false);
@@ -792,7 +791,7 @@ function AdminEvents({ events = [], setEvents, gallery = [], setGallery }) {
       {/* Modal: New Event */}
       <Modal open={eventModal} onClose={() => setEventModal(false)} title="Create New Event">
         <Field label="Event Title">
-          <input style={S.input} placeholder="e.g. Jasiri Investiture & Campout" value={eForm.title} onChange={(e) => setEForm({ ...eForm, title: e.target.value })} />
+          <input style={S.input} placeholder="e.g. Investiture & Camp" value={eForm.title} onChange={(e) => setEForm({ ...eForm, title: e.target.value })} />
         </Field>
         <Field label="Date">
           <input style={S.input} placeholder="e.g. 25th Sept 2026 or Every Wednesday" value={eForm.date} onChange={(e) => setEForm({ ...eForm, date: e.target.value })} />
@@ -805,7 +804,7 @@ function AdminEvents({ events = [], setEvents, gallery = [], setGallery }) {
         </Field>
         <Field label="Category / Tag">
           <select style={{ ...S.input, background: "#1A1F28" }} value={eForm.tag} onChange={(e) => setEForm({ ...eForm, tag: e.target.value })}>
-            {["Regular", "Training", "Expedition", "Service", "Campout", "Ceremony"].map((t) => (
+            {["Regular", "Training", "Service", "Camp", "Ceremony"].map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
@@ -863,9 +862,7 @@ function AdminEvents({ events = [], setEvents, gallery = [], setGallery }) {
   );
 }
 
-// ══════════════════════════════════════════════
 //  ADMIN · SCOUTS
-// ══════════════════════════════════════════════
 function AdminScouts({ pending, setPending, approved, setApproved, rejected, setRejected, scouts, setScouts }) {
   const [tab, setTab] = useState("pending");
   const [modal, setModal] = useState(false);
@@ -957,9 +954,7 @@ function AdminScouts({ pending, setPending, approved, setApproved, rejected, set
   );
 }
 
-// ══════════════════════════════════════════════
 //  ADMIN · FINANCES
-// ══════════════════════════════════════════════
 function AdminFinances({ finances, setFinances }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ type: "income", desc: "", amount: "", date: "", person: "" });
@@ -1020,9 +1015,7 @@ function AdminFinances({ finances, setFinances }) {
   );
 }
 
-// ══════════════════════════════════════════════
 //  ADMIN · INVENTORY
-// ══════════════════════════════════════════════
 function AdminInventory({ inventory, setInventory }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ name: "", category: "Camping Gear", qty: "", condition: "Good", location: "Bishop Square Store" });
@@ -1084,9 +1077,7 @@ function AdminInventory({ inventory, setInventory }) {
   );
 }
 
-// ══════════════════════════════════════════════
 //  ADMIN · BADGES
-// ══════════════════════════════════════════════
 function AdminBadges({ scouts, badgeReports, setBadgeReports, awardedBadges, setAwardedBadges }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ scoutId: "", badge: "", category: "Compulsory", date: "" });
@@ -1184,9 +1175,7 @@ function AdminBadges({ scouts, badgeReports, setBadgeReports, awardedBadges, set
   );
 }
 
-// ══════════════════════════════════════════════
 //  ADMIN SHELL
-// ══════════════════════════════════════════════
 function AdminShell({ onSignOut, data, updateData }) {
   const [tab, setTab] = useState("home");
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1236,9 +1225,7 @@ function AdminShell({ onSignOut, data, updateData }) {
   );
 }
 
-// ══════════════════════════════════════════════
 //  MEMBER SCREENS
-// ══════════════════════════════════════════════
 function MemberHome({ member, setScreen }) {
   return (
     <div>
@@ -1259,7 +1246,6 @@ function MemberHome({ member, setScreen }) {
           {[
             { label: "Events", sub: "Upcoming", nav: "events", icon: Calendar },
             { label: "My Badges", sub: "Track progress", nav: "badges", icon: Award },
-            { label: "Service Log", sub: "Log hours", nav: null, icon: Clock },
             { label: "My Profile", sub: "View & edit", nav: "profile", icon: Users }
           ].map(({ label, sub, nav, icon: Icon }) => (
             <div key={label} onClick={() => nav && setScreen(nav)} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 12px", cursor: "pointer", textAlign: "center" }}>

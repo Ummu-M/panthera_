@@ -37,7 +37,7 @@ type Member = {
 }
 
 export default function UsersTable({ initialUsers, actorRole }: { initialUsers: Member[]; actorRole: string }) {
-  const [users, setUsers] = useState(initialUsers)
+  const [users, setUsers] = useState(() => Array.from(new Map(initialUsers.map((user) => [user.id, user])).values()))
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -120,7 +120,7 @@ export default function UsersTable({ initialUsers, actorRole }: { initialUsers: 
             const status = String(user.membershipStatus || '').toLowerCase()
             const canApprove = status === 'pending'
             return (
-              <tr key={user.id}>
+              <tr key={user.id} data-key={user.id}>
                 <td style={{ padding: '14px 18px', borderBottom: '1px solid rgba(18,36,53,0.06)', fontSize: 13.5, color: C.muted }}>{user.email}</td>
                 <td style={{ padding: '14px 18px', borderBottom: '1px solid rgba(18,36,53,0.06)', fontSize: 13.5 }}>{user.name || '—'}</td>
                 <td style={{ padding: '14px 18px', borderBottom: '1px solid rgba(18,36,53,0.06)', fontSize: 13.5 }}>{user.yearOfStudy || '—'}</td>
