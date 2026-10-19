@@ -4,26 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import {
   Calendar, Clock, MapPin, Mail, Music2, Users, Shield,
-  Plus, Trash2, Tag, Image as ImageIcon, Upload
+  Plus, Trash2, Tag, Image as ImageIcon, Upload, Pencil, Check, X
 } from 'lucide-react'
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa'
 import { theme } from '@/lib/theme'
+import { DEFAULT_LEADERSHIP } from '@/lib/leadership'
 import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 
 const C = theme
-
-// Real crew leadership roster — Kenyatta University Panthera Rover Crew.
-const LEADERSHIP = [
-  { role: 'Jasiri Scout Leader', name: 'Dr. David Muigai' },
-  { role: 'Assistant JSL', name: 'Nicolas Mwangi' },
-  { role: 'Crew Leader', name: 'Horas Obutinda' },
-  { role: 'Assistant Crew Leader', name: 'Charles Njuguna' },
-  { role: 'Quartermaster', name: 'Sharon Juma' },
-  { role: 'Scribe', name: 'Sheiline Jerop' },
-  { role: 'Organising Secretary', name: 'Justus Kipchirchir' },
-  { role: 'Disciplinarian', name: 'Romelse Akoyo' },
-  { role: 'Treasurer', name: 'Ummuayman Mohamed' }
-]
 
 // Photos are managed entirely from the admin gallery upload form below —
 // no static /public images are assumed to exist.
@@ -93,6 +81,7 @@ export default function AuthPage() {
   const membershipStatus = (session as any)?.user?.membershipStatus || 'not_started'
   const isAdmin = role === 'SYSTEM_ADMIN' || role === 'SECRETARY' || role === 'RSL'
   const canManageEvents = isAdmin || role === 'OG'
+  const canEditLeadership = role === 'RSL' || role === 'CREW_LEADER'
   const isPending = role === 'PENDING' || membershipStatus === 'pending'
 
   // Events — fetched from /api/events, backed by the existing Event model.
@@ -108,6 +97,11 @@ export default function AuthPage() {
   const [photoCaption, setPhotoCaption] = useState('')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoMsg, setPhotoMsg] = useState('')
+  const [leadership, setLeadership] = useState(() => DEFAULT_LEADERSHIP.map((leader) => ({ ...leader })))
+  const [editingLeader, setEditingLeader] = useState<string | null>(null)
+  const [leaderNameDraft, setLeaderNameDraft] = useState('')
+  const [leadershipMsg, setLeadershipMsg] = useState('')
+  const [savingLeader, setSavingLeader] = useState(false)
 
   useEffect(() => {
     fetch('/api/events')
@@ -121,7 +115,38 @@ export default function AuthPage() {
       .then((data) => setPhotos(Array.isArray(data) ? data : []))
       .catch(() => setPhotos([]))
       .finally(() => setPhotosLoading(false))
+
+    fetch('/api/leadership')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setLeadership(data)
+      })
+      .catch(() => {})
   }, [])
+
+  const saveLeaderName = async (roleKey: string) => {
+    setSavingLeader(true)
+    setLeadershipMsg('')
+    try {
+      const response = await fetch('/api/leadership', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roleKey, name: leaderNameDraft })
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setLeadershipMsg(data?.error || 'Unable to update this name.')
+        return
+      }
+      setLeadership((current) => current.map((leader) => leader.roleKey === roleKey ? data : leader))
+      setEditingLeader(null)
+      setLeadershipMsg('Crew roster updated.')
+    } catch {
+      setLeadershipMsg('Unable to update this name.')
+    } finally {
+      setSavingLeader(false)
+    }
+  }
 
   const addEvent = async () => {
     if (!eventForm.title || !eventForm.startAt) {
@@ -525,16 +550,46 @@ export default function AuthPage() {
             <h2 style={{ margin: 0, fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 500, color: C.text }}>Crew Leadership &amp; Patrons</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-            {LEADERSHIP.map(({ role, name }) => (
-              <CrewCard key={role} accent={role === 'Crew Leader'} style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, minHeight: role === 'Crew Leader' ? 92 : 76 }}>
-                <InitialsBadge name={name} prominent={role === 'Crew Leader'} />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>{name}</div>
-                  <div style={{ fontSize: 11.5, color: C.muted, marginTop: 1 }}>{role}</div>
+            {leadership.map(({ roleKey, role: leaderRole, name }) => (
+              <CrewCard key={roleKey} accent={leaderRole === 'Crew Leader'} style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, minHeight: leaderRole === 'Crew Leader' ? 92 : 76 }}>
+                <InitialsBadge name={editingLeader === roleKey ? leaderNameDraft || name : name} prominent={leaderRole === 'Crew Leader'} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {editingLeader === roleKey ? (
+                    <input
+                      aria-label={`Name for ${leaderRole}`}
+                      autoFocus
+                      maxLength={100}
+                      value={leaderNameDraft}
+                      onChange={(event) => setLeaderNameDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') void saveLeaderName(roleKey)
+                        if (event.key === 'Escape') setEditingLeader(null)
+                      }}
+                      style={{ ...inputStyle, padding: '7px 9px', fontSize: 13, marginBottom: 4 }}
+                    />
+                  ) : (
+                    <div style={{ fontWeight: 600, fontSize: 13.5, color: C.text }}>{name}</div>
+                  )}
+                  <div style={{ fontSize: 11.5, color: C.muted, marginTop: 1 }}>{leaderRole}</div>
                 </div>
+                {canEditLeadership ? editingLeader === roleKey ? (
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button type="button" title="Save name" aria-label="Save name" disabled={savingLeader} onClick={() => void saveLeaderName(roleKey)} style={{ border: 0, background: 'transparent', color: C.gold600, cursor: 'pointer', padding: 5 }}><Check size={17} /></button>
+                    <button type="button" title="Cancel edit" aria-label="Cancel edit" onClick={() => setEditingLeader(null)} style={{ border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', padding: 5 }}><X size={17} /></button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    title={`Edit ${leaderRole} name`}
+                    aria-label={`Edit ${leaderRole} name`}
+                    onClick={() => { setEditingLeader(roleKey); setLeaderNameDraft(name); setLeadershipMsg('') }}
+                    style={{ border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', padding: 5 }}
+                  ><Pencil size={15} /></button>
+                ) : null}
               </CrewCard>
             ))}
           </div>
+          {leadershipMsg ? <div role="status" style={{ marginTop: 10, color: leadershipMsg === 'Crew roster updated.' ? C.teal500 : '#9b2c2c', fontSize: 12 }}>{leadershipMsg}</div> : null}
         </section>
 
         {/* Events */}

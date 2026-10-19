@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  label     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  emailVerified         DateTime?
+  name                  String?
+  image                 String?
+  roleId                String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  registrationNumber    String?   @unique
+  phone                 String?
+  school                String?
+  course                String?
+  yearOfStudy           Int?
+  dateJoined            DateTime?
+  membershipStatus      String?
+  registrationFeePaid   Boolean   @default(false)
+  registrationFeeAmount Float?
+  registrationFeePaidAt DateTime?
+  registrationFeeYear   Int?
+  accounts              Account[]
+  sessions              Session[]
+  role                  Role?     @relation(fields: [roleId], references: [id])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  tag         String?
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Photo {
+  id        String   @id @default(uuid())
+  url       String
+  caption   String?
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  category  String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  type      String   @default("income")
+  purpose   String?
+}
+
+model InventoryItem {
+  id        String   @id @default(uuid())
+  name      String
+  category  String
+  quantity  Int
+  condition String
+  location  String?
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BadgeCompletion {
+  id          String    @id @default(uuid())
+  userId      String
+  badgeName   String
+  category    String
+  completedAt DateTime  @default(now())
+  reportName  String?
+  reportUrl   String?
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  status      String    @default("PENDING")
+
+  @@unique([userId, badgeName])
+  @@index([userId])
+}

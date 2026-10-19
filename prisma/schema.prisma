@@ -3,47 +3,43 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// Use UUIDs for primary keys and include timestamps
 model Role {
-  id        String  @id @default(uuid())
-  name      String  @unique
+  id        String   @id @default(uuid())
+  name      String   @unique
   label     String
-  users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  users     User[]
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  emailVerified DateTime?
-  name          String?
-  image         String?
-  roleId        String?
-  role          Role?    @relation(fields: [roleId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  // Additional member fields
-  registrationNumber String? @unique
-  registrationIdentityKey String? @unique
-  phone              String?
-  school             String?
-  course             String?
-  yearOfStudy        Int?
-  dateJoined         DateTime?
-  membershipStatus   String?
-  registrationFeePaid Boolean @default(false)
-  registrationFeeYear Int?
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  emailVerified         DateTime?
+  name                  String?
+  image                 String?
+  roleId                String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  registrationNumber    String?   @unique
+  phone                 String?
+  school                String?
+  course                String?
+  yearOfStudy           Int?
+  dateJoined            DateTime?
+  membershipStatus      String?
+  registrationFeePaid   Boolean   @default(false)
   registrationFeeAmount Float?
   registrationFeePaidAt DateTime?
-
-  accounts Account[]
-  sessions Session[]
+  registrationFeeYear   Int?
+  accounts              Account[]
+  sessions              Session[]
+  role                  Role?     @relation(fields: [roleId], references: [id])
 }
 
 model Account {
@@ -52,15 +48,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -70,8 +65,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -82,7 +76,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Additional domain models (skeletons)
 model Event {
   id          String   @id @default(uuid())
   title       String
@@ -97,7 +90,7 @@ model Event {
 
 model Photo {
   id        String   @id @default(uuid())
-  url       String   @db.Text
+  url       String
   caption   String?
   createdBy String
   createdAt DateTime @default(now())
@@ -109,11 +102,11 @@ model Payment {
   userId    String
   amount    Float
   category  String
-  purpose   String?
-  type      String   @default("income")
   status    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  type      String   @default("income")
+  purpose   String?
 }
 
 model InventoryItem {
@@ -129,16 +122,16 @@ model InventoryItem {
 }
 
 model BadgeCompletion {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   userId      String
   badgeName   String
   category    String
-  reportUrl   String?  @db.Text
+  completedAt DateTime  @default(now())
   reportName  String?
-  status      String   @default("PENDING")
-  reviewedBy  String?
+  reportUrl   String?
   reviewedAt  DateTime?
-  completedAt DateTime @default(now())
+  reviewedBy  String?
+  status      String    @default("PENDING")
 
   @@unique([userId, badgeName])
   @@index([userId])
