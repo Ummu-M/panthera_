@@ -27,6 +27,7 @@ model User {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   registrationNumber    String?   @unique
+  registrationIdentityKey String? @unique
   phone                 String?
   school                String?
   course                String?
@@ -135,4 +136,9 @@ model BadgeCompletion {
 
   @@unique([userId, badgeName])
   @@index([userId])
+}
+
+model CrewLeadership {
+  roleKey String @id
+  name    String
 }
