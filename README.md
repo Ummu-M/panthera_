@@ -12,6 +12,7 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 - Event creation and management
 - Photo gallery management
 - Administrator member management
+- Optional browser push notifications for members and crew broadcasts for authorized admins
 - Responsive App Router interface
 
 ## Tech Stack
@@ -48,9 +49,14 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
    GOOGLE_CLIENT_ID="your-google-client-id"
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
    ADMIN_EMAIL="admin@example.com"
+   VAPID_PUBLIC_KEY="your-web-push-public-key"
+   VAPID_PRIVATE_KEY="your-web-push-private-key"
+   VAPID_SUBJECT="mailto:kupantherascouts@gmail.com"
    ```
 
    `DATABASE_URL` uses Supabase's IPv4 shared transaction pooler. `DIRECT_URL` uses the session-mode pooler for Prisma migration commands. Keep `.env` private and never commit credentials.
+
+   Generate a VAPID key pair once with `npx web-push generate-vapid-keys`, then keep the same keys in development and production. Push notifications require HTTPS in production; localhost is allowed for development.
 
 3. Generate the Prisma client and apply the schema:
 
@@ -87,12 +93,15 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 - `/dashboard` - Authenticated member dashboard
 - `/profile` - Member profile
 - `/admin` - Administrator dashboard
+- `/admin/notifications` - Send a browser push notification to opted-in devices
 - `/admin/users` - Member administration
 - `/access-denied` - Unauthorized access page
 - `/privacy` - Privacy policy
 - `/terms` - Terms of service
 
 API endpoints are available under `/api`, including authentication, registration, profile, events, gallery, and administrator members.
+
+Members enable or disable push notifications from the Profile tab on `/dashboard`. Authorized admins can broadcast a title, message, and internal destination from `/admin/notifications`. Delivery only targets devices that opted in; expired browser subscriptions are removed automatically.
 
 ## Roles and Access
 

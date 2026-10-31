@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createRegistrationIdentityKey, isSameRegistrant } from '../lib/registration-identity'
+import { createRegistrationIdentityKey, getMissingRequiredRegistrationFields, isSameRegistrant } from '../lib/registration-identity'
 
 test('identity keys normalize registration numbers and Kenyan phone formats', () => {
   assert.equal(
@@ -23,4 +23,32 @@ test('name and phone identify a registrant when no registration number is suppli
 test('incomplete details do not create a secondary identity key', () => {
   assert.equal(createRegistrationIdentityKey({ name: 'Alex Kimani' }), null)
   assert.equal(createRegistrationIdentityKey({ phone: '0712 345 678' }), null)
+})
+
+test('required join details must be present before submission', () => {
+  assert.deepEqual(getMissingRequiredRegistrationFields({
+    name: 'Alex Kimani',
+    email: 'alex@example.com',
+    phone: '0712345678',
+    registrationNumber: 'Q/2024/12345',
+    course: 'Computer Science',
+    yearOfStudy: '3'
+  }), [])
+
+  assert.deepEqual(getMissingRequiredRegistrationFields({
+    email: 'alex@example.com',
+    phone: '0712345678',
+    registrationNumber: 'Q/2024/12345',
+    course: 'Computer Science',
+    yearOfStudy: '3'
+  }), ['Full name'])
+
+  assert.deepEqual(getMissingRequiredRegistrationFields({
+    name: 'Alex Kimani',
+    email: '',
+    phone: '0712345678',
+    registrationNumber: 'Q/2024/12345',
+    course: '',
+    yearOfStudy: '3'
+  }), ['Email address', 'Course / programme'])
 })

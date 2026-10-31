@@ -41,6 +41,7 @@ export default function PrivacyPolicyPage() {
             <li>Registration number and membership status</li>
             <li>Event attendance, service hour records, and badge progress associated with your account</li>
             <li>Photos you or an administrator upload to the crew photo gallery</li>
+            <li>Push subscription details for devices where you enable crew notifications</li>
           </ul>
 
           <h2 style={sectionHeading}>2. How we use your information</h2>
@@ -49,6 +50,7 @@ export default function PrivacyPolicyPage() {
             <li>Create and manage your crew membership account</li>
             <li>Track attendance, service hours, badge progress, and membership dues</li>
             <li>Communicate with you about crew activities and events</li>
+            <li>Send crew updates to devices where you have enabled browser notifications</li>
             <li>Maintain crew administrative records (finances, inventory, projects)</li>
           </ul>
 
@@ -63,7 +65,9 @@ export default function PrivacyPolicyPage() {
           <p>
             We do not sell or rent your personal information. Information is visible to authorized crew leadership
             (Crew Leader, Assistant Crew Leader, Secretary, and System Administrators) for the purpose of managing
-            crew membership. We do not share your information with third parties for advertising or marketing purposes.
+            crew membership. When you opt in to browser notifications, notification content is sent through your
+            browser's push service for delivery to your device. We do not share your information with third parties
+            for advertising or marketing purposes.
           </p>
 
           <h2 style={sectionHeading}>5. Data storage and security</h2>

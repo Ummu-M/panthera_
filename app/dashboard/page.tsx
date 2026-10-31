@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Home, Calendar, Star, User, Compass, BookOpen, Wrench, Stethoscope, Heart, Globe, Handshake, Apple, Smile, Users, Activity, AlertCircle, Droplet, Code, Leaf, Target } from 'lucide-react'
 import { theme } from '@/lib/theme'
 import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
+import PushNotificationSettings from '@/app/components/PushNotificationSettings'
 
 const C = theme
 
@@ -243,6 +244,7 @@ export default function DashboardPage() {
             <Row icon={Target} label="Status" value="Active member" />
             <Row icon={Calendar} label="Joined" value="Recently" />
             <Row icon={Star} label="Service hours" value={serviceHours.toString()} />
+            <PushNotificationSettings />
           </div>
         )}
       </div>

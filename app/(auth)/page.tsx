@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import {
   Calendar, Clock, MapPin, Mail, Music2, Users, Shield,
   Plus, Trash2, Tag, Image as ImageIcon, Upload, Pencil, Check, X
 } from 'lucide-react'
-import { FaInstagram, FaWhatsapp } from 'react-icons/fa'
+import { FaGoogle, FaInstagram, FaWhatsapp } from 'react-icons/fa'
 import { theme } from '@/lib/theme'
 import { DEFAULT_LEADERSHIP } from '@/lib/leadership'
+import { getMissingRequiredRegistrationFields } from '@/lib/registration-identity'
 import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 
 const C = theme
@@ -75,6 +76,8 @@ export default function AuthPage() {
   const [course, setCourse] = useState('')
   const [year, setYear] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+  const authDialogRef = useRef<HTMLDivElement>(null)
 
   const isLoggedIn = useMemo(() => status === 'authenticated' && !!session, [session, status])
   const role = (session as any)?.user?.role
@@ -83,6 +86,39 @@ export default function AuthPage() {
   const canManageEvents = isAdmin || role === 'OG'
   const canEditLeadership = role === 'RSL' || role === 'CREW_LEADER'
   const isPending = role === 'PENDING' || membershipStatus === 'pending'
+
+  useEffect(() => {
+    if (view !== 'signin' && view !== 'join') return
+
+    const dialog = authDialogRef.current
+    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const initialFocus = dialog?.querySelector<HTMLElement>('[data-auth-initial-focus]')
+    initialFocus?.focus()
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setView('landing')
+        return
+      }
+      if (event.key !== 'Tab' || !dialog) return
+
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+        .filter((element) => element.offsetParent !== null)
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [view])
 
   // Events — fetched from /api/events, backed by the existing Event model.
   const [events, setEvents] = useState<any[]>([])
@@ -230,9 +266,27 @@ export default function AuthPage() {
     }
   }
 
+  const requiredFieldsMissing = getMissingRequiredRegistrationFields({
+    name,
+    email,
+    phone,
+    registrationNumber,
+    course,
+    yearOfStudy: year
+  })
+
   const handleCreateAccount = async () => {
-    if (!email || !name) {
-      setStatusMessage('Please add your name and email to continue.')
+    const missingRequired = getMissingRequiredRegistrationFields({
+      name,
+      email,
+      phone,
+      registrationNumber,
+      course,
+      yearOfStudy: year
+    })
+
+    if (missingRequired.length > 0) {
+      setStatusMessage(`Please complete the required fields: ${missingRequired.join(', ')}.`)
       return
     }
 
@@ -241,13 +295,13 @@ export default function AuthPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
-          name,
-          phone,
-          school,
-          course,
+          email: email.trim(),
+          name: name.trim(),
+          phone: phone.trim(),
+          school: school.trim(),
+          course: course.trim(),
           yearOfStudy: year || null,
-          registrationNumber
+          registrationNumber: registrationNumber.trim()
         })
       })
 
@@ -357,32 +411,49 @@ export default function AuthPage() {
 
   if (view === 'signin') {
     return (
-      <main style={{ ...bgStyle, display: 'grid', placeItems: 'center', padding: 24 }}>
-        <div style={{ width: '100%', maxWidth: 470, ...panelStyle, padding: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-            <button onClick={() => setView('landing')} style={{ border: 'none', background: 'transparent', color: C.muted, fontSize: 22, cursor: 'pointer' }}>←</button>
-            <div style={{ fontWeight: 700, color: C.gold500, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 11 }}>Panthera</div>
+      <main className="auth-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setView('landing') }}>
+        <div className="auth-dialog" ref={authDialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-title">
+          <div className="auth-brand-row">
+            <span className="auth-brand-mark" aria-hidden="true">P</span>
+            <span className="auth-brand-name">Panthera</span>
+            <button className="auth-close" type="button" onClick={() => setView('landing')} aria-label="Close sign in">
+              <X size={18} />
+            </button>
           </div>
 
-          <h1 style={{ margin: '0 0 8px', fontSize: 28, color: C.text, fontWeight: 500, fontFamily: 'var(--font-display)' }}>Sign in</h1>
-          <p style={{ margin: '0 0 18px', color: C.muted, lineHeight: 1.6, fontSize: 14 }}>Use your Google account or continue with your email.</p>
+          <h1 className="auth-title" id="auth-title">Welcome back</h1>
+          <p className="auth-subtitle">Welcome back to the crew.</p>
 
-          <div style={{ display: 'grid', gap: 12 }}>
-            <button onClick={() => signIn('google', { callbackUrl: '/' })} style={primaryBtn}>
-              Continue with Google
+          <div className="auth-controls">
+            <button
+              className="auth-google-button"
+              data-auth-initial-focus
+              disabled={authLoading}
+              onClick={() => {
+                setAuthLoading(true)
+                void signIn('google', { callbackUrl: '/' }).finally(() => setAuthLoading(false))
+              }}
+            >
+              <span className="auth-google-icon" aria-hidden="true"><FaGoogle size={15} /></span>
+              {authLoading ? 'Opening Google…' : 'Continue with Google'}
             </button>
 
-            <div style={{ color: C.muted, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center', margin: '6px 0' }}>or</div>
+            <div className="auth-divider" aria-label="or"><span>or</span></div>
 
+            <label className="auth-label" htmlFor="signin-email">Email address</label>
             <input
+              id="signin-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              style={inputStyle}
+              placeholder="you@example.com"
+              autoComplete="email"
+              className="auth-input"
             />
 
             <button
+              className="auth-email-button"
+              disabled={authLoading}
               onClick={() => {
                 if (!email.trim()) {
                   setStatusMessage('Please enter your email first.')
@@ -390,17 +461,19 @@ export default function AuthPage() {
                 }
                 setStatusMessage('Use the Google sign-in for full access. Or create an account below.')
               }}
-              style={secondaryBtn}
             >
               Continue with email
             </button>
-
-            <button onClick={() => signIn('google', { callbackUrl: '/' })} style={{ width: '100%', border: 'none', background: 'transparent', color: C.gold500, borderRadius: 10, padding: '12px 16px', fontWeight: 600, cursor: 'pointer' }}>
-              Join crew with Google
-            </button>
           </div>
 
-          {statusMessage ? <div style={{ marginTop: 16, color: C.gold600, fontSize: 13 }}>{statusMessage}</div> : null}
+          {statusMessage ? <div className="auth-message" role="status" aria-live="polite">{statusMessage}</div> : null}
+
+          <div className="auth-footer">
+            <button className="auth-mode-toggle" type="button" onClick={() => { setStatusMessage(''); setView('join') }}>
+              New to Panthera? Join the crew
+            </button>
+            <p className="auth-legal">By continuing, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+          </div>
         </div>
       </main>
     )
@@ -408,44 +481,86 @@ export default function AuthPage() {
 
   if (view === 'join') {
     return (
-      <main style={{ ...bgStyle, display: 'grid', placeItems: 'center', padding: 24 }}>
-        <div style={{ width: '100%', maxWidth: 620, ...panelStyle, padding: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-            <button onClick={() => setView('landing')} style={{ border: 'none', background: 'transparent', color: C.muted, fontSize: 22, cursor: 'pointer' }}>←</button>
-            <div style={{ fontWeight: 700, color: C.gold500, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 11 }}>Panthera</div>
+      <main className="auth-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setView('landing') }}>
+        <div className="auth-dialog auth-dialog-join" ref={authDialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-title">
+          <div className="auth-brand-row">
+            <span className="auth-brand-mark" aria-hidden="true">P</span>
+            <span className="auth-brand-name">Panthera</span>
+            <button className="auth-close" type="button" onClick={() => setView('landing')} aria-label="Close join crew">
+              <X size={18} />
+            </button>
           </div>
 
-          <h1 style={{ margin: '0 0 8px', fontSize: 28, color: C.text, fontWeight: 500, fontFamily: 'var(--font-display)' }}>Join Crew</h1>
-          <p style={{ margin: '0 0 18px', color: C.muted, lineHeight: 1.6, fontSize: 14 }}>Use Google to verify your identity. Then complete your Panthera registration and wait for admin review.</p>
+          <h1 className="auth-title" id="auth-title">Join the crew</h1>
+          <p className="auth-subtitle">Make your next chapter an adventure.</p>
 
-          <div style={{ display: 'grid', gap: 12 }}>
-            <button onClick={() => signIn('google', { callbackUrl: '/profile' })} style={{ ...primaryBtn, padding: '16px 18px' }}>
-              Continue with Google
+          <div className="auth-controls">
+            <button
+              className="auth-google-button"
+              data-auth-initial-focus
+              disabled={authLoading}
+              onClick={() => {
+                setAuthLoading(true)
+                void signIn('google', { callbackUrl: '/profile' }).finally(() => setAuthLoading(false))
+              }}
+            >
+              <span className="auth-google-icon" aria-hidden="true"><FaGoogle size={15} /></span>
+              {authLoading ? 'Opening Google…' : 'Join with Google'}
             </button>
 
-            <div style={{ display: 'grid', gap: 12 }}>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" style={inputStyle} />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="KU email address" type="email" style={inputStyle} />
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number" type="tel" style={inputStyle} />
-              <input value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="KU registration / student number" style={inputStyle} />
-              <input value={school} onChange={(e) => setSchool(e.target.value)} placeholder="School / faculty" style={inputStyle} />
-              <input value={course} onChange={(e) => setCourse(e.target.value)} placeholder="Course / programme" style={inputStyle} />
-              <select value={year} onChange={(e) => setYear(e.target.value)} style={inputStyle}>
-                <option value="">Select year of study</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
-                <option value="5">Postgraduate</option>
-              </select>
+            <div className="auth-divider" aria-label="or"><span>or</span></div>
 
-              <button onClick={handleCreateAccount} style={{ ...primaryBtn, padding: '16px 18px' }}>
-                Submit registration
-              </button>
+            <div className="auth-fields">
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-name">Full name <span aria-hidden="true">*</span></label>
+                <input id="join-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" autoComplete="name" className="auth-input" required aria-required="true" />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-email">Email address <span aria-hidden="true">*</span></label>
+                <input id="join-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your KU email" type="email" autoComplete="email" className="auth-input" required aria-required="true" />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-phone">Phone number <span aria-hidden="true">*</span></label>
+                <input id="join-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Your phone number" type="tel" autoComplete="tel" className="auth-input" required aria-required="true" />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-registration">Registration / student number <span aria-hidden="true">*</span></label>
+                <input id="join-registration" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Your KU number" className="auth-input" required aria-required="true" />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-school">School / faculty</label>
+                <input id="join-school" value={school} onChange={(e) => setSchool(e.target.value)} placeholder="Your school or faculty" className="auth-input" />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-course">Course / programme <span aria-hidden="true">*</span></label>
+                <input id="join-course" value={course} onChange={(e) => setCourse(e.target.value)} placeholder="Your course" className="auth-input" required aria-required="true" />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="join-year">Year of study <span aria-hidden="true">*</span></label>
+                <select id="join-year" value={year} onChange={(e) => setYear(e.target.value)} className="auth-input" required aria-required="true">
+                  <option value="">Select year of study</option>
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                  <option value="5">Postgraduate</option>
+                </select>
+              </div>
             </div>
+
+            <button onClick={handleCreateAccount} className="auth-submit-button" disabled={requiredFieldsMissing.length > 0} aria-disabled={requiredFieldsMissing.length > 0}>
+              Submit registration
+            </button>
           </div>
 
-          {statusMessage ? <div style={{ marginTop: 16, color: C.gold600, fontSize: 13 }}>{statusMessage}</div> : null}
+          {statusMessage ? <div className="auth-message" role="status" aria-live="polite">{statusMessage}</div> : null}
+
+          <div className="auth-footer">
+            <button className="auth-mode-toggle" type="button" onClick={() => { setStatusMessage(''); setView('signin') }}>
+              Already in the crew? Sign in
+            </button>
+            <p className="auth-legal">By continuing, you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+          </div>
         </div>
       </main>
     )
@@ -665,28 +780,32 @@ export default function AuthPage() {
             <h2 style={{ margin: 0, fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 500, color: C.text }}>Photo Gallery</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: isAdmin ? 20 : 0 }}>
-            {photos.map((photo) => (
-              <div key={photo.id} style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.border}`, aspectRatio: '4 / 3', background: '#f2f9fd' }}>
-                <img src={photo.url} alt={photo.caption || 'Panthera Rover Crew'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {photo.caption && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(0deg, rgba(0,0,0,0.55), transparent)', color: '#fff', fontSize: 11.5, padding: '16px 10px 8px' }}>
-                    {photo.caption}
-                  </div>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => deletePhoto(photo.id)}
-                    aria-label={`Delete photo: ${photo.caption || 'untitled'}`}
-                    style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', padding: 5, display: 'flex' }}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </div>
-            ))}
+          <div style={{ marginBottom: isAdmin ? 20 : 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin', paddingBottom: 6 }}>
+            <div style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(220px, 32%)', gap: 14, minWidth: '100%' }}>
+              {photos.map((photo) => (
+                <div key={photo.id} style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.border}`, aspectRatio: '4 / 3', background: '#f2f9fd', minHeight: 220 }}>
+                  <img src={photo.url} alt={photo.caption || 'Panthera Rover Crew'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  {photo.caption && (
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(0deg, rgba(0,0,0,0.55), transparent)', color: '#fff', fontSize: 11.5, padding: '16px 10px 8px' }}>
+                      {photo.caption}
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => deletePhoto(photo.id)}
+                      aria-label={`Delete photo: ${photo.caption || 'untitled'}`}
+                      style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', padding: 5, display: 'flex' }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
             {!photosLoading && photos.length === 0 && (
-              <CrewEmptyState>No gallery stories have been shared yet. The first field moment will have a place here.</CrewEmptyState>
+              <div style={{ marginTop: 12 }}>
+                <CrewEmptyState>No gallery stories have been shared yet. The first field moment will have a place here.</CrewEmptyState>
+              </div>
             )}
           </div>
 

@@ -63,7 +63,13 @@ async function resolveUserRole(email?: string | null) {
 }
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET, 
+   logger: {
+    error(code, metadata: any) {
+      console.error('>>> NEXTAUTH ERROR:', code)
+      console.error('>>> DETAILS:', metadata?.message || metadata)
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',

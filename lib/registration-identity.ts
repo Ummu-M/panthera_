@@ -51,3 +51,23 @@ export function isSameRegistrant(
 
   return !!firstName && !!firstPhone && firstName === secondName && firstPhone === secondPhone
 }
+
+export function getMissingRequiredRegistrationFields(details: {
+  name?: unknown
+  email?: unknown
+  phone?: unknown
+  registrationNumber?: unknown
+  course?: unknown
+  yearOfStudy?: unknown
+}) {
+  const missing: string[] = []
+
+  if (!String(details.name ?? '').trim()) missing.push('Full name')
+  if (!String(details.email ?? '').trim()) missing.push('Email address')
+  if (!String(details.phone ?? '').trim()) missing.push('Phone number')
+  if (!String(details.registrationNumber ?? '').trim()) missing.push('Registration / student number')
+  if (!String(details.course ?? '').trim()) missing.push('Course / programme')
+  if (!String(details.yearOfStudy ?? '').trim()) missing.push('Year of study')
+
+  return missing
+}

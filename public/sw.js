@@ -12,3 +12,37 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(fetch(event.request).catch(() => caches.match('/')))
   }
 })
+
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try {
+    payload = event.data ? event.data.json() : {}
+  } catch {
+    payload = { body: event.data ? event.data.text() : '' }
+  }
+
+  const title = typeof payload.title === 'string' && payload.title ? payload.title : 'Panthera crew update'
+  const body = typeof payload.body === 'string' ? payload.body : ''
+  const path = typeof payload.url === 'string' && payload.url.startsWith('/') && !payload.url.startsWith('//') && !payload.url.includes('\\')
+    ? payload.url
+    : '/'
+
+  event.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon: '/scout.png',
+    badge: '/scout.png',
+    data: { path }
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const destination = new URL(event.notification.data?.path || '/', self.location.origin)
+  const path = destination.origin === self.location.origin ? destination.href : `${self.location.origin}/`
+
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const existing = clients.find((client) => new URL(client.url).origin === self.location.origin)
+    if (existing) return existing.navigate(path).then((client) => client?.focus())
+    return self.clients.openWindow(path)
+  }))
+})

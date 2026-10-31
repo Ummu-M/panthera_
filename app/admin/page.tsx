@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { BadgeCheck, Boxes, Camera, ClipboardList, Landmark, LayoutDashboard } from 'lucide-react'
+import { BadgeCheck, Bell, Boxes, Camera, ClipboardList, Landmark, LayoutDashboard } from 'lucide-react'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -69,6 +69,7 @@ export default async function UsersPage() {
             { href: '/admin/inventory', label: 'Inventory', icon: Boxes },
             { href: '/admin/gallery', label: 'Gallery', icon: Camera },
             { href: '/admin/badges', label: 'Badges', icon: BadgeCheck },
+            { href: '/admin/notifications', label: 'Notifications', icon: Bell },
             { href: '/dashboard', label: 'Member view', icon: LayoutDashboard }
           ].map(({ href, label, icon: Icon }) => <Link key={href} href={href} title={label} style={{ display: 'flex', alignItems: 'center', gap: 9, color: C.text, background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 13px', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}><Icon size={16} color={C.gold600} />{label}</Link>)}
         </nav>
