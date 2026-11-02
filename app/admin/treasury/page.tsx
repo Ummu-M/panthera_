@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../../lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -25,7 +24,6 @@ export default async function TreasuryPage() {
             <div style={{ letterSpacing: '0.16em', fontSize: 10.5, color: C.gold500, textTransform: 'uppercase', fontWeight: 600 }}>Kenyatta University Panthera Rover Crew</div>
             <h1 style={{ margin: '2px 0 0', fontSize: 25, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Treasury</h1>
           </div>
-          <Link href="/admin" style={{ color: C.forest950, background: C.gold500, borderRadius: 8, padding: '10px 14px', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>Back to admin</Link>
         </header>
         <TreasuryPanel initialPayments={payments.map((payment) => ({ ...payment, createdAt: payment.createdAt.toISOString() }))} />
       </div>
