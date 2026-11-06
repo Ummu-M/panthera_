@@ -167,18 +167,35 @@ export default function TreasuryPanel({ initialPayments, initialTotal, entryCoun
       </section>
 
       <section style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, marginTop: 20 }}>
-        <h2 style={{ margin: '0 0 14px', color: C.text, fontSize: 19, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Record treasury entry</h2>
-        <form onSubmit={submit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-          <input required type="number" min="0" step="0.01" placeholder="Amount (KSh)" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} style={{ padding: 11, border: `1px solid ${C.border}`, borderRadius: 8 }} />
-          <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} style={{ padding: 11, border: `1px solid ${C.border}`, borderRadius: 8 }}><option value="income">{TREASURY_TYPE_LABELS.income}</option><option value="expense">{TREASURY_TYPE_LABELS.expense}</option></select>
-          <input required placeholder="Purpose" value={form.purpose} onChange={(event) => setForm({ ...form, purpose: event.target.value })} style={{ padding: 11, border: `1px solid ${C.border}`, borderRadius: 8 }} />
-          <button type="submit" disabled={saving} style={{ border: 'none', borderRadius: 8, background: saving ? C.muted : C.gold500, color: '#fff', fontWeight: 700, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add entry'}</button>
-          {editingId ? <button type="button" onClick={() => { setEditingId(null); setForm({ amount: '', type: 'income', purpose: '' }) }} style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: '#fff', color: C.text }}>Cancel</button> : null}
+        <h2 style={{ margin: '0 0 16px', color: C.text, fontSize: 19, fontFamily: 'var(--font-display)', fontWeight: 500 }}>{editingId ? 'Edit treasury entry' : 'Record treasury entry'}</h2>
+        <form className="treasury-entry-form" onSubmit={submit}>
+          <label className="treasury-field">
+            Amount
+            <span className="treasury-amount-input">
+              <span aria-hidden="true">KSh</span>
+              <input required type="number" min="0" step="0.01" aria-label="Amount in Kenyan shillings" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} />
+            </span>
+          </label>
+          <label className="treasury-field">
+            Type
+            <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}>
+              <option value="income">{TREASURY_TYPE_LABELS.income}</option>
+              <option value="expense">{TREASURY_TYPE_LABELS.expense}</option>
+            </select>
+          </label>
+          <label className="treasury-field treasury-purpose-field">
+            Purpose
+            <input required placeholder="e.g. Camp transport" value={form.purpose} onChange={(event) => setForm({ ...form, purpose: event.target.value })} />
+          </label>
+          <div className="treasury-form-actions">
+            <button type="submit" disabled={saving} style={{ background: saving ? C.muted : C.gold500 }}>{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add entry'}</button>
+            {editingId ? <button type="button" onClick={() => { setEditingId(null); setForm({ amount: '', type: 'income', purpose: '' }) }}>Cancel</button> : null}
+          </div>
         </form>
       </section>
 
       <section style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', marginTop: 20 }}>
-        <div className="admin-toolbar" style={{ alignItems: 'end', borderBottom: `1px solid ${C.border}`, display: 'flex', flexWrap: 'wrap', gap: 12, padding: 16 }}>
+        <div className="admin-toolbar treasury-filter-toolbar" style={{ alignItems: 'end', borderBottom: `1px solid ${C.border}`, display: 'flex', flexWrap: 'wrap', gap: 12, padding: 16 }}>
           <AdminSearchInput value={query} onSearch={(value) => updateQuery('q', value, true)} />
           <label style={{ color: C.muted, display: 'grid', fontSize: 13, gap: 6 }}>
             Type

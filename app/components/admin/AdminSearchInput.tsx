@@ -16,7 +16,7 @@ export function AdminSearchInput({ value, onSearch }: { value: string; onSearch:
   }, [input, onSearch, value])
 
   return (
-    <label style={{ color: theme.muted, display: 'grid', flex: '1 1 240px', fontSize: 13, gap: 6 }}>
+    <label className="treasury-search-field" style={{ color: theme.muted, display: 'grid', flex: '1 1 240px', fontSize: 13, gap: 6 }}>
       Search treasury
       <input
         type="search"
