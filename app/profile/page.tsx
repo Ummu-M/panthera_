@@ -22,6 +22,7 @@ export default async function ProfilePage() {
 
   const email = (session as any)?.user?.email
   const sessionName = (session as any)?.user?.name
+  const isSystemAdmin = (session as any)?.user?.role === 'SYSTEM_ADMIN'
 
   if (!email) {
     return (
@@ -58,16 +59,25 @@ export default async function ProfilePage() {
             {profileWarning}
           </div>
         )}
-        <ProfileForm profile={{
-          name: user?.name || sessionName,
-          email: user?.email || email,
-          registrationNumber: user?.registrationNumber,
-          phone: user?.phone,
-          school: user?.school,
-          course: user?.course,
-          yearOfStudy: user?.yearOfStudy,
-          membershipStatus: user?.membershipStatus
-        }} />
+        {isSystemAdmin ? (
+          <section style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, marginTop: 24, boxShadow: '0 14px 36px rgba(18,36,53,0.08)' }}>
+            <h2 style={{ margin: '0 0 8px', color: C.text, fontSize: 21, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Administrator account</h2>
+            <p style={{ margin: 0, color: C.muted, lineHeight: 1.6, fontSize: 14 }}>This account has system administration access and is not a student membership profile.</p>
+            <div style={{ marginTop: 18, color: C.text, fontSize: 14, fontWeight: 600 }}>{sessionName || user?.name || 'System Administrator'}</div>
+            <div style={{ marginTop: 4, color: C.muted, fontSize: 13 }}>{email}</div>
+          </section>
+        ) : (
+          <ProfileForm profile={{
+            name: user?.name || sessionName,
+            email: user?.email || email,
+            registrationNumber: user?.registrationNumber,
+            phone: user?.phone,
+            school: user?.school,
+            course: user?.course,
+            yearOfStudy: user?.yearOfStudy,
+            membershipStatus: user?.membershipStatus
+          }} />
+        )}
       </div>
     </main>
   )

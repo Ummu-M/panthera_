@@ -41,7 +41,7 @@ async function resolveUserRole(email?: string | null) {
       return 'PENDING'
     }
 
-    if (dbUser.role?.name) return dbUser.role.name
+    if (dbUser.role?.name && dbUser.role.name !== 'MEMBER') return dbUser.role.name
 
     const memberRole = await prisma.role.findUnique({ where: { name: 'MEMBER' } })
     if (memberRole) {

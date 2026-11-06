@@ -8,14 +8,14 @@ const rolePermissions: Record<string, string[]> = {
   PENDING: ['profile'],
   SYSTEM_ADMIN: ['*'],
   MEMBER: ['dashboard', 'profile', 'events'],
-  SECRETARY: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/gallery', 'admin/badges'],
-  RSL: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/gallery', 'admin/badges', 'admin/treasury', 'admin/inventory'],
+  SECRETARY: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/members', 'admin/gallery', 'admin/badges'],
+  RSL: ['dashboard', 'profile', 'admin', 'admin/users', 'admin/members', 'admin/gallery', 'admin/badges', 'admin/treasury', 'admin/inventory'],
   OG: ['events', 'dashboard', 'profile'],
   TREASURER: ['treasury', 'admin/treasury', 'dashboard', 'profile'],
   QUARTERMASTER: ['inventory', 'admin/inventory', 'dashboard', 'profile'],
   DISCIPLINARIAN: ['discipline', 'dashboard', 'profile'],
-  CREW_LEADER: ['dashboard', 'reports', 'profile'],
-  ASSISTANT_CREW_LEADER: ['dashboard', 'reports', 'profile']
+  CREW_LEADER: ['dashboard', 'reports', 'profile', 'admin/members'],
+  ASSISTANT_CREW_LEADER: ['dashboard', 'reports', 'profile', 'admin/members']
 }
 
 function hasAccess(role: string | undefined, pathname: string) {
@@ -39,6 +39,12 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   const role = (token?.role as string | undefined) || (token ? 'MEMBER' : undefined)
+
+  if (role === 'SYSTEM_ADMIN' && pathname === '/dashboard') {
+    const url = req.nextUrl.clone()
+    url.pathname = '/admin'
+    return NextResponse.redirect(url)
+  }
 
   if (!hasAccess(role, pathname)) {
     const url = req.nextUrl.clone()

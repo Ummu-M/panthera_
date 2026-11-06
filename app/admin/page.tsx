@@ -1,6 +1,5 @@
 import React from 'react'
 import Link from 'next/link'
-import { BadgeCheck, Bell, Boxes, Camera, ClipboardList, Landmark, LayoutDashboard } from 'lucide-react'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -25,16 +24,23 @@ export default async function UsersPage() {
   }
 
   const [users, payments, inventory, events] = await Promise.all([
-    prisma.user.findMany({ include: { role: true }, orderBy: { createdAt: 'desc' } }),
+    prisma.user.findMany({
+      where: { role: { isNot: { name: 'SYSTEM_ADMIN' } } },
+      include: { role: true },
+      orderBy: { createdAt: 'desc' }
+    }),
     prisma.payment.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
     prisma.inventoryItem.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
     prisma.event.findMany({ orderBy: { createdAt: 'desc' }, take: 8 })
   ])
-  const scoutCount = users.filter((user) => user.membershipStatus === 'approved').length
+  const scoutCount = users.filter((user) => user.role?.name !== 'SYSTEM_ADMIN' && user.membershipStatus === 'approved').length
   const treasuryBalance = payments.reduce((total, payment) => total + (payment.type === 'expense' ? -payment.amount : payment.amount), 0)
   const repairCount = inventory.filter((item) => item.condition === 'Needs Repair').length
   const recentActivity = [
-    ...payments.map((item) => ({ label: `${item.type === 'expense' ? 'Expense' : 'Income'} recorded: ${item.category}`, date: item.createdAt })),
+    ...payments.map((item) => ({
+      label: `${item.type === 'expense' ? 'Expense' : 'Income'} recorded: ${item.purpose || item.category}`,
+      date: item.createdAt
+    })),
     ...inventory.map((item) => ({ label: `Inventory added: ${item.name}`, date: item.createdAt })),
     ...events.map((item) => ({ label: `Event created: ${item.title}`, date: item.createdAt }))
   ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8)
@@ -49,11 +55,11 @@ export default async function UsersPage() {
   ]
 
   return (
-    <main style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
+    <main className="admin-shell" style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <img src="/pantheralogo.png" alt="Panthera crest" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 3 }} />
+            <img className="admin-shell-header-logo" src="/pantheralogo.png" alt="Panthera crest" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 3 }} />
             <div>
               <div style={{ letterSpacing: '0.16em', fontSize: 10.5, color: C.gold500, textTransform: 'uppercase', fontWeight: 600 }}>Kenyatta University Panthera Rover Crew</div>
               <h1 style={{ margin: '2px 0 0', fontSize: 30, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Command centre</h1>
@@ -62,19 +68,7 @@ export default async function UsersPage() {
           </div>
         </header>
 
-        <nav aria-label="Admin workspaces" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 8, marginTop: 24 }}>
-          {[
-            { href: '/admin/users', label: 'Members', icon: ClipboardList },
-            { href: '/admin/treasury', label: 'Treasury', icon: Landmark },
-            { href: '/admin/inventory', label: 'Inventory', icon: Boxes },
-            { href: '/admin/gallery', label: 'Gallery', icon: Camera },
-            { href: '/admin/badges', label: 'Badges', icon: BadgeCheck },
-            { href: '/admin/notifications', label: 'Notifications', icon: Bell },
-            { href: '/dashboard', label: 'Member view', icon: LayoutDashboard }
-          ].map(({ href, label, icon: Icon }) => <Link key={href} href={href} title={label} style={{ display: 'flex', alignItems: 'center', gap: 9, color: C.text, background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 13px', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}><Icon size={16} color={C.gold600} />{label}</Link>)}
-        </nav>
-
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginTop: 28 }}>
+        <section className="admin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginTop: 28 }}>
           {[
             ['Total scouts', scoutCount],
             ['Treasury balance', `KSh ${treasuryBalance.toLocaleString()}`],

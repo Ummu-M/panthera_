@@ -1,21 +1,36 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
-import { createRegistrationIdentityKey, isSameRegistrant } from '@/lib/registration-identity'
+import { createRegistrationIdentityKey, getMissingRequiredRegistrationFields, isSameRegistrant } from '@/lib/registration-identity'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { email, name, phone, registrationNumber, school, course, yearOfStudy } = req.body || {}
-  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
-  if (!normalizedEmail) return res.status(400).json({ error: 'Email is required' })
+  const missingRequired = getMissingRequiredRegistrationFields({ email, name, phone, registrationNumber, school, course, yearOfStudy })
+  if (missingRequired.length > 0) {
+    return res.status(400).json({ error: `Please complete the required fields: ${missingRequired.join(', ')}.` })
+  }
+
+  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedName = name.trim()
+  const normalizedPhone = phone.trim()
+  const normalizedRegistrationNumber = registrationNumber.trim()
+  const normalizedSchool = school.trim()
+  const normalizedCourse = course.trim()
+  const normalizedYear = Number(yearOfStudy)
 
   try {
     const existing = await prisma.user.findFirst({
-      where: { email: { equals: normalizedEmail, mode: 'insensitive' } }
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+      include: { role: true }
     })
     const status = String(existing?.membershipStatus || '').toLowerCase()
 
     if (existing) {
+      if (existing.role?.name === 'SYSTEM_ADMIN') {
+        return res.status(403).json({ error: 'System administrator accounts do not use student registration.' })
+      }
+
       if (status === 'pending') {
         return res.status(409).json({ error: 'An account already exists for this email and is already pending review.' })
       }
@@ -26,16 +41,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const registrantDetails = {
-      name: name || existing?.name,
-      phone: phone || existing?.phone,
-      registrationNumber: registrationNumber || existing?.registrationNumber
+      name: normalizedName,
+      phone: normalizedPhone,
+      registrationNumber: normalizedRegistrationNumber
     }
     const identityCandidates = await prisma.user.findMany({
       where: {
         OR: [
-          ...(registrantDetails.registrationNumber ? [{ registrationNumber: { equals: registrantDetails.registrationNumber, mode: 'insensitive' as const } }] : []),
-          ...(registrantDetails.name ? [{ name: { equals: registrantDetails.name, mode: 'insensitive' as const } }] : [])
-        ]
+          { registrationNumber: { equals: registrantDetails.registrationNumber, mode: 'insensitive' as const } },
+          { name: { equals: registrantDetails.name, mode: 'insensitive' as const } }
+        ],
+        role: { isNot: { name: 'SYSTEM_ADMIN' } }
       },
       select: { id: true, name: true, phone: true, registrationNumber: true }
     })
@@ -53,13 +69,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const updated = await prisma.user.update({
         where: { email: existing.email },
         data: {
-          name: name || existing.name,
-          phone: phone || existing.phone,
-          registrationNumber: registrationNumber || existing.registrationNumber,
+          name: normalizedName,
+          phone: normalizedPhone,
+          registrationNumber: normalizedRegistrationNumber,
           registrationIdentityKey,
-          school: school || existing.school,
-          course: course || existing.course,
-          yearOfStudy: yearOfStudy !== undefined && yearOfStudy !== null && yearOfStudy !== '' ? Number(yearOfStudy) : existing.yearOfStudy,
+          school: normalizedSchool,
+          course: normalizedCourse,
+          yearOfStudy: normalizedYear,
           membershipStatus: 'pending',
           registrationFeePaid: false
         }
@@ -74,13 +90,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const user = await prisma.user.create({
       data: {
         email: normalizedEmail,
-        name,
-        phone: phone || null,
-        registrationNumber: registrationNumber || null,
+        name: normalizedName,
+        phone: normalizedPhone,
+        registrationNumber: normalizedRegistrationNumber,
         registrationIdentityKey,
-        school: school || null,
-        course: course || null,
-        yearOfStudy: yearOfStudy !== undefined && yearOfStudy !== null && yearOfStudy !== '' ? Number(yearOfStudy) : null,
+        school: normalizedSchool,
+        course: normalizedCourse,
+        yearOfStudy: normalizedYear,
         role: { connect: { id: role.id } },
         membershipStatus: 'pending',
         registrationFeePaid: false

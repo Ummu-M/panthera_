@@ -62,8 +62,28 @@ export default function InventoryPanel({ initialItems }: { initialItems: Item[] 
         </form>
         {message ? <div style={{ marginTop: 12, color: C.gold600, fontSize: 13 }}>{message}</div> : null}
       </section>
-      <section style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, overflowX: 'auto', marginTop: 20 }}>
-        <table style={{ width: '100%', minWidth: 780, borderCollapse: 'collapse', color: C.text }}><thead><tr style={{ background: 'rgba(46,155,236,.06)' }}>{['Item', 'Category', 'Quantity', 'Condition', 'Location', 'Action'].map((heading) => <th key={heading} style={{ textAlign: 'left', padding: 14 }}>{heading}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={item.id}><td style={{ padding: 14 }}>{item.name}</td><td style={{ padding: 14 }}>{item.category}</td><td style={{ padding: 14 }}>{item.quantity}</td><td style={{ padding: 14 }}>{item.condition}</td><td style={{ padding: 14 }}>{item.location || '—'}</td><td style={{ padding: 14 }}><button onClick={() => editItem(item)} type="button" style={{ border: 'none', background: 'transparent', color: C.gold600, cursor: 'pointer' }}>Edit</button><button onClick={() => removeItem(item.id)} type="button" style={{ border: 'none', background: 'transparent', color: '#9b2c2c', cursor: 'pointer', marginLeft: 10 }}>Remove</button></td></tr>)}</tbody></table>
+      <section style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', marginTop: 20 }}>
+        <div className="admin-table-desktop" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 780, borderCollapse: 'collapse', color: C.text }}><thead><tr style={{ background: 'rgba(46,155,236,.06)' }}>{['Item', 'Category', 'Quantity', 'Condition', 'Location', 'Action'].map((heading) => <th key={heading} style={{ textAlign: 'left', padding: 14 }}>{heading}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={item.id}><td style={{ padding: 14 }}>{item.name}</td><td style={{ padding: 14 }}>{item.category}</td><td style={{ padding: 14 }}>{item.quantity}</td><td style={{ padding: 14 }}>{item.condition}</td><td style={{ padding: 14 }}>{item.location || '—'}</td><td style={{ padding: 14 }}><button onClick={() => editItem(item)} type="button" style={{ border: 'none', background: 'transparent', color: C.gold600, cursor: 'pointer' }}>Edit</button><button onClick={() => removeItem(item.id)} type="button" style={{ border: 'none', background: 'transparent', color: '#9b2c2c', cursor: 'pointer', marginLeft: 10 }}>Remove</button></td></tr>)}</tbody></table>
+        </div>
+        <div className="admin-table-mobile responsive-card-list">
+          {items.map((item) => (
+            <article key={item.id} className="responsive-card">
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{item.name}</div>
+              <div className="responsive-card-details">
+                <div><span className="responsive-card-label">Category</span><span className="responsive-card-value">{item.category}</span></div>
+                <div><span className="responsive-card-label">Quantity</span><span className="responsive-card-value">{item.quantity}</span></div>
+                <div><span className="responsive-card-label">Condition</span><span className="responsive-card-value">{item.condition}</span></div>
+                <div><span className="responsive-card-label">Location</span><span className="responsive-card-value">{item.location || 'Not set'}</span></div>
+              </div>
+              <div className="responsive-card-actions">
+                <button type="button" onClick={() => editItem(item)} style={{ border: `1px solid ${C.border}`, borderRadius: 7, background: '#fff', color: C.gold600 }}>Edit</button>
+                <button type="button" onClick={() => removeItem(item.id)} style={{ border: '1px solid rgba(155,44,44,.25)', borderRadius: 7, background: '#fff', color: '#9b2c2c' }}>Remove</button>
+              </div>
+            </article>
+          ))}
+          {items.length === 0 ? <p style={{ margin: 4, color: C.muted, fontSize: 13 }}>No inventory items yet.</p> : null}
+        </div>
       </section>
     </>
   )

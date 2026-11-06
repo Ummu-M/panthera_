@@ -11,3 +11,13 @@ export const DEFAULT_LEADERSHIP = [
 ] as const
 
 export const LEADERSHIP_EDITOR_ROLES = ['RSL', 'CREW_LEADER']
+
+export const MEMBER_DIRECTORY_ROLES = [
+  'SYSTEM_ADMIN',
+  'SECRETARY',
+  'RSL',
+  'CREW_LEADER',
+  'ASSISTANT_CREW_LEADER'
+]
+
+export const ANNUAL_ROLE_ASSIGNER_ROLES = ['SYSTEM_ADMIN', 'RSL'] as const

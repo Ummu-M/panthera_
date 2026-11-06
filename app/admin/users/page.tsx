@@ -21,7 +21,11 @@ export default async function UsersPage() {
     )
   }
 
-  const users = await prisma.user.findMany({ include: { role: true }, orderBy: { createdAt: 'desc' } })
+  const users = await prisma.user.findMany({
+    where: { role: { isNot: { name: 'SYSTEM_ADMIN' } } },
+    include: { role: true },
+    orderBy: { createdAt: 'desc' }
+  })
 
   return (
     <main style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
@@ -36,9 +40,15 @@ export default async function UsersPage() {
           </div>
         </header>
 
+        <section style={{ marginTop: 20, padding: 16, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10 }}>
+          <h2 style={{ margin: '0 0 6px', fontSize: 15, color: C.text }}>Annual crew role assignments</h2>
+          <p style={{ margin: 0, color: C.muted, fontSize: 13, lineHeight: 1.6 }}>
+            The System Administrator and RSL can update the roster after the crew confirms its annual appointments. Use the Role selector on an approved member&apos;s row to assign a post. Reassigning a post moves it from its previous holder; only approved members can hold crew roles. Secretaries can review member applications but cannot change roles.
+          </p>
+        </section>
+
         <UsersTable actorRole={role} initialUsers={users.map((user) => ({
           id: user.id,
-          roleId: user.roleId,
           name: user.name,
           email: user.email,
           registrationNumber: user.registrationNumber,

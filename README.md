@@ -9,6 +9,7 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 - Membership registration and approval workflow
 - Role-based access control for crew leadership roles
 - Member dashboard and profile management
+- Leadership member directory with clickable approved-member tags and uploaded badge reports
 - Event creation and management
 - Photo gallery management
 - Administrator member management
@@ -58,6 +59,8 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 
    Generate a VAPID key pair once with `npx web-push generate-vapid-keys`, then keep the same keys in development and production. Push notifications require HTTPS in production; localhost is allowed for development.
 
+   If `/api/push/public-key` responds with `503`, configure both VAPID keys above and restart the app. Members must enable notifications on each device, and admins can only reach devices with a saved subscription.
+
 3. Generate the Prisma client and apply the schema:
 
    ```bash
@@ -95,13 +98,18 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 - `/admin` - Administrator dashboard
 - `/admin/notifications` - Send a browser push notification to opted-in devices
 - `/admin/users` - Member administration
+- `/admin/members` - Read-only directory of approved members and their badge reports for crew leadership
 - `/access-denied` - Unauthorized access page
 - `/privacy` - Privacy policy
 - `/terms` - Terms of service
 
-API endpoints are available under `/api`, including authentication, registration, profile, events, gallery, and administrator members.
+API endpoints are available under `/api`, including authentication, registration, profile, events, gallery, administrator members, and leadership member details.
 
-Members enable or disable push notifications from the Profile tab on `/dashboard`. Authorized admins can broadcast a title, message, and internal destination from `/admin/notifications`. Delivery only targets devices that opted in; expired browser subscriptions are removed automatically.
+The crew member directory is available to system administrators, the secretary, the Rover Scout Leader, the Crew Leader, and the Assistant Crew Leader. Only approved members appear; selecting a member loads their details and uploaded badge reports.
+
+Crew applications require a full name, valid email address, phone number, student/registration number, school/faculty, course/programme, and year of study before submission. System administrator accounts are kept separate from student member lists and counts.
+
+Members can upload PDF, Word, JPEG, PNG, or WebP badge reports up to 10 MB from the Badges tab on `/dashboard`; submissions are sent to the RSL for review. Members enable or disable push notifications from the Profile tab on `/dashboard`. Authorized admins can broadcast a title, message, and internal destination from `/admin/notifications`. Delivery only targets devices that opted in; expired browser subscriptions are removed automatically.
 
 ## Roles and Access
 
@@ -118,6 +126,8 @@ Roles are stored in the Prisma `Role` model and connected to users through `User
 - `ASSISTANT_CREW_LEADER`
 
 Route access is enforced by `middleware.ts`. Users without permission are redirected to `/access-denied`.
+
+Annual crew role assignments can be made by the `SYSTEM_ADMIN` or `RSL` after the crew confirms its appointments. On `/admin/users`, either selects a role on an approved member's row; reassigning a leadership role moves it from the previous holder. Secretaries can review applications but cannot assign roles. System administrator accounts cannot be assigned as student leadership members.
 
 ## Database Models
 

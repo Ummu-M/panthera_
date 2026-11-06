@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Home, Calendar, Star, User, Compass, BookOpen, Wrench, Stethoscope, Heart, Globe, Handshake, Apple, Smile, Users, Activity, AlertCircle, Droplet, Code, Leaf, Target } from 'lucide-react'
 import { theme } from '@/lib/theme'
+import { MAX_REPORT_FILE_SIZE_BYTES } from '@/lib/security'
 import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 import PushNotificationSettings from '@/app/components/PushNotificationSettings'
 
@@ -62,23 +63,58 @@ export default function DashboardPage() {
   const { data: session } = useSession()
   const [tab, setTab] = useState('home')
   const [badges, setBadges] = useState<any[]>([])
+  const [badgeLoadError, setBadgeLoadError] = useState('')
+  const [badgeUploadMessage, setBadgeUploadMessage] = useState('')
+  const [badgeUploadError, setBadgeUploadError] = useState(false)
+  const [uploadingBadge, setUploadingBadge] = useState<string | null>(null)
   const [events] = useState<any[]>([])
   const [serviceHours] = useState(0)
 
   useEffect(() => {
-    fetch('/api/badges').then((response) => response.json()).then((data) => setBadges(Array.isArray(data) ? data : [])).catch(() => setBadges([]))
+    const loadBadges = async () => {
+      try {
+        const response = await fetch('/api/badges')
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Could not load your badge reports.')
+        setBadges(Array.isArray(data) ? data : [])
+      } catch (error) {
+        setBadgeLoadError(error instanceof Error ? error.message : 'Could not load your badge reports.')
+      }
+    }
+
+    void loadBadges()
   }, [])
 
   const completeBadge = async (badgeName: string, category: string, file: File) => {
-    const reportUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(String(reader.result))
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-    const response = await fetch('/api/badges', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ badgeName, category, reportUrl, reportName: file.name }) })
-    const data = await response.json()
-    if (response.ok) setBadges((current) => [...current.filter((badge) => badge.badgeName !== badgeName), data])
+    setUploadingBadge(badgeName)
+    setBadgeUploadMessage('')
+    setBadgeUploadError(false)
+    try {
+      if (file.size > MAX_REPORT_FILE_SIZE_BYTES) {
+        throw new Error('Choose a report under 10 MB.')
+      }
+
+      const reportUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(new Error('Could not read this file. Please try again.'))
+        reader.readAsDataURL(file)
+      })
+      const response = await fetch('/api/badges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badgeName, category, reportUrl, reportName: file.name })
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not upload this report.')
+      setBadges((current) => [...current.filter((badge) => badge.badgeName !== badgeName), data])
+      setBadgeUploadMessage('Report uploaded successfully. It is awaiting RSL review.')
+    } catch (error) {
+      setBadgeUploadError(true)
+      setBadgeUploadMessage(error instanceof Error ? error.message : 'Could not upload this report.')
+    } finally {
+      setUploadingBadge(null)
+    }
   }
 
   const undoBadge = async (badgeName: string) => {
@@ -94,9 +130,19 @@ export default function DashboardPage() {
     return 'Awaiting RSL review'
   }
 
-  const reportUpload = (name: string, category: string) => <label style={{ display: 'inline-flex', color: C.gold500, cursor: 'pointer', fontSize: 11, padding: '0 0 10px' }}>
-    Upload report
-    <input type="file" accept=".pdf,.doc,.docx,image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void completeBadge(name, category, file) }} style={{ display: 'none' }} />
+  const reportUpload = (name: string, category: string) => <label style={{ display: 'inline-flex', color: uploadingBadge ? C.muted : C.gold500, cursor: uploadingBadge ? 'wait' : 'pointer', fontSize: 11, padding: '0 0 10px' }}>
+    {uploadingBadge === name ? 'Uploading…' : 'Upload report'}
+    <input
+      type="file"
+      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp"
+      disabled={uploadingBadge !== null}
+      onChange={(event) => {
+        const file = event.currentTarget.files?.[0]
+        event.currentTarget.value = ''
+        if (file) void completeBadge(name, category, file)
+      }}
+      style={{ display: 'none' }}
+    />
   </label>
 
   const compulsoryBadges = [
@@ -219,6 +265,15 @@ export default function DashboardPage() {
 
         {tab === 'badges' && (
           <div className="responsive-split-even" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+            {(badgeLoadError || badgeUploadMessage) && (
+              <p
+                role={badgeUploadError || badgeLoadError ? 'alert' : 'status'}
+                aria-live="polite"
+                style={{ gridColumn: '1 / -1', margin: 0, color: badgeUploadError || badgeLoadError ? '#8c2f26' : C.muted, fontSize: 13 }}
+              >
+                {badgeLoadError || badgeUploadMessage}
+              </p>
+            )}
             <div>
               <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.muted, marginBottom: 2 }}>Compulsory</div>
               <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Required to advance in rank</div>

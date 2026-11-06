@@ -42,17 +42,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { id, data } = req.body || {}
       if (!id || !data) return res.status(400).json({ error: 'Missing member id or data' })
+      const targetMember = await prisma.user.findFirst({
+        where: { id: String(id), role: { isNot: { name: 'SYSTEM_ADMIN' } } },
+        select: { id: true, membershipStatus: true }
+      })
+      if (!targetMember) return res.status(404).json({ error: 'Member not found' })
 
-      const allowedFields = ['name', 'email', 'phone', 'school', 'course', 'yearOfStudy', 'membershipStatus', 'registrationFeePaid', 'registrationFeeYear', 'registrationFeeAmount', 'registrationFeePaidAt', 'roleId']
+      const allowedFields = ['name', 'email', 'phone', 'school', 'course', 'yearOfStudy', 'membershipStatus', 'registrationFeePaid', 'registrationFeeYear', 'registrationFeeAmount', 'registrationFeePaidAt']
       const updateData: Record<string, any> = {}
       for (const key of allowedFields) {
         if (key in data) updateData[key] = data[key]
       }
 
-      if (typeof data.roleId === 'string') {
-        if (!canAssignRole(role, data.roleId)) return res.status(403).json({ error: 'Only the system administrator can assign roles' })
-        const requestedRole = await prisma.role.findUnique({ where: { name: data.roleId } })
+      if (typeof data.roleName === 'string') {
+        if (!canAssignRole(role, data.roleName, targetMember.membershipStatus)) {
+          return res.status(403).json({ error: 'Only the System Administrator can assign roles to approved members' })
+        }
+        const requestedRole = await prisma.role.findUnique({ where: { name: data.roleName } })
         if (!requestedRole) return res.status(400).json({ error: 'Unknown role' })
+
+        if (requestedRole.name !== 'MEMBER') {
+          const memberRole = await prisma.role.findUnique({ where: { name: 'MEMBER' } })
+          if (!memberRole) return res.status(500).json({ error: 'Default member role is not configured' })
+          const user = await prisma.$transaction(async (transaction) => {
+            await transaction.user.updateMany({
+              where: { roleId: requestedRole.id, id: { not: String(id) } },
+              data: { roleId: memberRole.id }
+            })
+            return transaction.user.update({
+              where: { id: String(id) },
+              data: { roleId: requestedRole.id },
+              include: { role: true }
+            })
+          })
+          return res.status(200).json({ scout: normalizeMember(user) })
+        }
+
         updateData.roleId = requestedRole.id
       }
 
@@ -69,6 +94,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
       const { id } = req.body || {}
       if (!id) return res.status(400).json({ error: 'Member id is required' })
+      const targetMember = await prisma.user.findFirst({
+        where: { id: String(id), role: { isNot: { name: 'SYSTEM_ADMIN' } } },
+        select: { id: true }
+      })
+      if (!targetMember) return res.status(404).json({ error: 'Member not found' })
       await prisma.user.delete({ where: { id: String(id) } })
       return res.status(200).json({ ok: true })
     }
@@ -76,6 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
     const users = await prisma.user.findMany({
+      where: { role: { isNot: { name: 'SYSTEM_ADMIN' } } },
       include: { role: true },
       orderBy: { createdAt: 'desc' }
     })

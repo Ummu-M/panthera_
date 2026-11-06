@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isSameOriginRequest } from '@/lib/security'
+import { getTreasuryEntries, normalizeTreasuryQuery } from '@/lib/treasury-list'
 
 const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'TREASURER', 'RSL']
 
@@ -15,8 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (req.method === 'GET') {
-      const payments = await prisma.payment.findMany({ orderBy: { createdAt: 'desc' } })
-      return res.status(200).json(payments)
+      const result = await getTreasuryEntries(normalizeTreasuryQuery(req.query))
+      return res.status(200).json(result)
     }
 
     if (req.method === 'POST') {

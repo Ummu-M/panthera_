@@ -57,17 +57,23 @@ export function getMissingRequiredRegistrationFields(details: {
   email?: unknown
   phone?: unknown
   registrationNumber?: unknown
+  school?: unknown
   course?: unknown
   yearOfStudy?: unknown
 }) {
   const missing: string[] = []
 
-  if (!String(details.name ?? '').trim()) missing.push('Full name')
-  if (!String(details.email ?? '').trim()) missing.push('Email address')
-  if (!String(details.phone ?? '').trim()) missing.push('Phone number')
-  if (!String(details.registrationNumber ?? '').trim()) missing.push('Registration / student number')
-  if (!String(details.course ?? '').trim()) missing.push('Course / programme')
-  if (!String(details.yearOfStudy ?? '').trim()) missing.push('Year of study')
+  if (typeof details.name !== 'string' || !details.name.trim()) missing.push('Full name')
+  if (typeof details.email !== 'string' || !details.email.trim()) {
+    missing.push('Email address')
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim())) {
+    missing.push('Valid email address')
+  }
+  if (typeof details.phone !== 'string' || !details.phone.trim()) missing.push('Phone number')
+  if (typeof details.registrationNumber !== 'string' || !details.registrationNumber.trim()) missing.push('Registration / student number')
+  if (typeof details.school !== 'string' || !details.school.trim()) missing.push('School / faculty')
+  if (typeof details.course !== 'string' || !details.course.trim()) missing.push('Course / programme')
+  if (!['1', '2', '3', '4', '5'].includes(String(details.yearOfStudy ?? '').trim())) missing.push('Year of study')
 
   return missing
 }

@@ -8,7 +8,7 @@ const REVIEW_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
 
 export const config = {
   api: {
-    bodyParser: { sizeLimit: '10mb' }
+    bodyParser: { sizeLimit: '14mb' }
   }
 }
 

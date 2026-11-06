@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { signIn, signOut, useSession } from 'next-auth/react'
+import Image from 'next/image'
 import {
   Calendar, Clock, MapPin, Mail, Music2, Users, Shield,
   Plus, Trash2, Tag, Image as ImageIcon, Upload, Pencil, Check, X
@@ -271,6 +272,7 @@ export default function AuthPage() {
     email,
     phone,
     registrationNumber,
+    school,
     course,
     yearOfStudy: year
   })
@@ -281,6 +283,7 @@ export default function AuthPage() {
       email,
       phone,
       registrationNumber,
+      school,
       course,
       yearOfStudy: year
     })
@@ -340,16 +343,6 @@ export default function AuthPage() {
     }
   }, [isLoggedIn, isAdmin, isPending, role])
 
-  // Send admins straight to the admin panel right after they land here
-  // signed in — members still go to the regular dashboard. Once inside,
-  // the top nav lets an admin freely switch back to the member dashboard;
-  // this only decides the very first screen after login.
-  useEffect(() => {
-    if (isLoggedIn && isAdmin) {
-      window.location.href = '/admin'
-    }
-  }, [isLoggedIn, isAdmin])
-
   if (isLoggedIn && isPending) {
     return (
       <main style={{ ...bgStyle, display: 'grid', placeItems: 'center', padding: 24 }}>
@@ -379,6 +372,8 @@ export default function AuthPage() {
     )
   }
 
+  if (isLoggedIn && isAdmin) return null
+
   if (isLoggedIn) {
     return (
       <main style={{ ...bgStyle, display: 'grid', placeItems: 'center', padding: 24 }}>
@@ -397,8 +392,8 @@ export default function AuthPage() {
           </div>
 
           <div style={{ display: 'grid', gap: 12 }}>
-            <button onClick={() => (window.location.href = isAdmin ? '/admin' : '/dashboard')} style={primaryBtn}>
-              {isAdmin ? 'Open admin panel' : 'Open dashboard'}
+            <button onClick={() => (window.location.href = '/dashboard')} style={primaryBtn}>
+              Open dashboard
             </button>
             <button onClick={() => signOut({ callbackUrl: '/' })} style={secondaryBtn}>
               Sign out
@@ -414,8 +409,11 @@ export default function AuthPage() {
       <main className="auth-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setView('landing') }}>
         <div className="auth-dialog" ref={authDialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-title">
           <div className="auth-brand-row">
-            <span className="auth-brand-mark" aria-hidden="true">P</span>
-            <span className="auth-brand-name">Panthera</span>
+            <Image className="auth-brand-logo" src="/pantheralogo.png" width={44} height={44} alt="Panthera Rover Crew crest" />
+            <span className="auth-brand-name">
+              <span>Panthera</span>
+              <span className="auth-brand-subname">Rover Crew</span>
+            </span>
             <button className="auth-close" type="button" onClick={() => setView('landing')} aria-label="Close sign in">
               <X size={18} />
             </button>
@@ -484,8 +482,11 @@ export default function AuthPage() {
       <main className="auth-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setView('landing') }}>
         <div className="auth-dialog auth-dialog-join" ref={authDialogRef} role="dialog" aria-modal="true" aria-labelledby="auth-title">
           <div className="auth-brand-row">
-            <span className="auth-brand-mark" aria-hidden="true">P</span>
-            <span className="auth-brand-name">Panthera</span>
+            <Image className="auth-brand-logo" src="/pantheralogo.png" width={44} height={44} alt="Panthera Rover Crew crest" />
+            <span className="auth-brand-name">
+              <span>Panthera</span>
+              <span className="auth-brand-subname">Rover Crew</span>
+            </span>
             <button className="auth-close" type="button" onClick={() => setView('landing')} aria-label="Close join crew">
               <X size={18} />
             </button>
@@ -528,8 +529,8 @@ export default function AuthPage() {
                 <input id="join-registration" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Your KU number" className="auth-input" required aria-required="true" />
               </div>
               <div className="auth-field">
-                <label className="auth-label" htmlFor="join-school">School / faculty</label>
-                <input id="join-school" value={school} onChange={(e) => setSchool(e.target.value)} placeholder="Your school or faculty" className="auth-input" />
+                <label className="auth-label" htmlFor="join-school">School / faculty <span aria-hidden="true">*</span></label>
+                <input id="join-school" value={school} onChange={(e) => setSchool(e.target.value)} placeholder="Your school or faculty" className="auth-input" required aria-required="true" />
               </div>
               <div className="auth-field">
                 <label className="auth-label" htmlFor="join-course">Course / programme <span aria-hidden="true">*</span></label>
@@ -548,6 +549,11 @@ export default function AuthPage() {
               </div>
             </div>
 
+            {requiredFieldsMissing.length > 0 ? (
+              <p role="status" aria-live="polite" style={{ margin: '12px 0 0', color: C.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                Complete all required details to submit. Still needed: {requiredFieldsMissing.join(', ')}.
+              </p>
+            ) : null}
             <button onClick={handleCreateAccount} className="auth-submit-button" disabled={requiredFieldsMissing.length > 0} aria-disabled={requiredFieldsMissing.length > 0}>
               Submit registration
             </button>

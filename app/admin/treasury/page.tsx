@@ -3,10 +3,16 @@ import { authOptions } from '../../lib/auth'
 import { prisma } from '@/lib/prisma'
 import { theme } from '@/lib/theme'
 import TreasuryPanel from './TreasuryPanel'
+import { getTreasuryEntries, normalizeTreasuryQuery } from '@/lib/treasury-list'
+import { PageHeader } from '@/app/components/admin/AdminUI'
 
 const C = theme
 
-export default async function TreasuryPage() {
+type TreasuryPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function TreasuryPage({ searchParams }: TreasuryPageProps) {
   const session = await getServerSession(authOptions as any)
   const role = (session as any)?.user?.role
 
@@ -14,18 +20,32 @@ export default async function TreasuryPage() {
     return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.forest950, color: C.text }}>Access denied</main>
   }
 
-  const payments = await prisma.payment.findMany({ orderBy: { createdAt: 'desc' } })
+  const query = normalizeTreasuryQuery(await searchParams)
+  const [result, summary, entryCount] = await Promise.all([
+    getTreasuryEntries(query),
+    prisma.payment.groupBy({
+      by: ['type'],
+      where: { status: { not: 'pending' } },
+      _sum: { amount: true }
+    }),
+    prisma.payment.count()
+  ])
+  const income = summary.filter((item) => item.type !== 'expense').reduce((total, item) => total + (item._sum.amount || 0), 0)
+  const expenses = summary.filter((item) => item.type === 'expense').reduce((total, item) => total + (item._sum.amount || 0), 0)
 
   return (
     <main style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>
-          <div>
-            <div style={{ letterSpacing: '0.16em', fontSize: 10.5, color: C.gold500, textTransform: 'uppercase', fontWeight: 600 }}>Kenyatta University Panthera Rover Crew</div>
-            <h1 style={{ margin: '2px 0 0', fontSize: 25, fontFamily: 'var(--font-display)', fontWeight: 500 }}>Treasury</h1>
-          </div>
-        </header>
-        <TreasuryPanel initialPayments={payments.map((payment) => ({ ...payment, createdAt: payment.createdAt.toISOString() }))} />
+        <PageHeader eyebrow="Kenyatta University Panthera Rover Crew" title="Treasury" description="Track income, expenses, and the crew balance." />
+        <TreasuryPanel
+          initialPayments={result.items.map((payment) => ({ ...payment, createdAt: payment.createdAt.toISOString() }))}
+          initialTotal={result.total}
+          entryCount={entryCount}
+          income={income}
+          expenses={expenses}
+          page={result.page}
+          pageSize={result.pageSize}
+        />
       </div>
     </main>
   )

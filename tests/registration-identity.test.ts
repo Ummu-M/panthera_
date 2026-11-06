@@ -31,6 +31,7 @@ test('required join details must be present before submission', () => {
     email: 'alex@example.com',
     phone: '0712345678',
     registrationNumber: 'Q/2024/12345',
+    school: 'School of Computing',
     course: 'Computer Science',
     yearOfStudy: '3'
   }), [])
@@ -39,6 +40,7 @@ test('required join details must be present before submission', () => {
     email: 'alex@example.com',
     phone: '0712345678',
     registrationNumber: 'Q/2024/12345',
+    school: 'School of Computing',
     course: 'Computer Science',
     yearOfStudy: '3'
   }), ['Full name'])
@@ -48,7 +50,24 @@ test('required join details must be present before submission', () => {
     email: '',
     phone: '0712345678',
     registrationNumber: 'Q/2024/12345',
+    school: '',
     course: '',
     yearOfStudy: '3'
-  }), ['Email address', 'Course / programme'])
+  }), ['Email address', 'School / faculty', 'Course / programme'])
+})
+
+test('all student details and a valid year of study are required', () => {
+  const completeDetails = {
+    name: 'Alex Kimani',
+    email: 'alex@example.com',
+    phone: '0712345678',
+    registrationNumber: 'Q/2024/12345',
+    school: 'School of Computing',
+    course: 'Computer Science',
+    yearOfStudy: '3'
+  }
+  assert.deepEqual(getMissingRequiredRegistrationFields(completeDetails), [])
+  assert.deepEqual(getMissingRequiredRegistrationFields({ ...completeDetails, yearOfStudy: '8' }), ['Year of study'])
+  assert.deepEqual(getMissingRequiredRegistrationFields({ ...completeDetails, school: '  ' }), ['School / faculty'])
+  assert.deepEqual(getMissingRequiredRegistrationFields({ ...completeDetails, email: 'not-an-email' }), ['Valid email address'])
 })

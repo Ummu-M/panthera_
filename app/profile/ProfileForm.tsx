@@ -71,14 +71,14 @@ export default function ProfileForm({ profile }: { profile: ProfileData }) {
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, membershipStatus: 'pending' })
+        body: JSON.stringify(form)
       })
       const data = await response.json()
       if (!response.ok) {
         setMessage(data?.error || 'Unable to save your profile.')
         return
       }
-      setMessage('Profile submitted. Your membership is now pending admin review.')
+      setMessage(data?.message || 'Profile changes saved.')
       router.refresh()
     } catch {
       setMessage('Unable to save your profile. Please try again.')
@@ -90,7 +90,7 @@ export default function ProfileForm({ profile }: { profile: ProfileData }) {
   const isComplete = String(profile.membershipStatus || '').toLowerCase() === 'pending' || String(profile.membershipStatus || '').toLowerCase() === 'approved'
 
   return (
-    <section style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, marginTop: 24, boxShadow: '0 14px 36px rgba(18,36,53,0.08)' }}>
+    <section className="profile-panel" style={{ background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, marginTop: 24, boxShadow: '0 14px 36px rgba(18,36,53,0.08)' }}>
       <h2 style={{ margin: '0 0 8px', color: C.text, fontSize: 21, fontFamily: 'var(--font-display)', fontWeight: 500 }}>
         {isComplete ? 'Profile details' : 'Complete your profile'}
       </h2>
