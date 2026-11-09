@@ -3,8 +3,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isSameOriginRequest, isSafeReportDataUrl } from '@/lib/security'
+import { isBadgeProgressStatus, resolveBadgeProgressStatus } from '@/lib/badge-progress'
 
-const REVIEW_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
+const PROGRESS_VIEW_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
 
 export const config = {
   api: {
@@ -20,52 +21,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (req.method === 'GET') {
-      if (REVIEW_ROLES.includes(role)) {
+      if (PROGRESS_VIEW_ROLES.includes(role)) {
         const completions = await prisma.badgeCompletion.findMany({ orderBy: { completedAt: 'desc' } })
-        return res.status(200).json(completions)
+        return res.status(200).json(completions.map((completion) => ({
+          ...completion,
+          progressStatus: resolveBadgeProgressStatus(completion.progressStatus, completion.status)
+        })))
       }
       const user = await prisma.user.findUnique({ where: { email } })
       const completions = user ? await prisma.badgeCompletion.findMany({ where: { userId: user.id }, orderBy: { completedAt: 'desc' } }) : []
-      return res.status(200).json(completions)
+      return res.status(200).json(completions.map((completion) => ({
+        ...completion,
+        progressStatus: resolveBadgeProgressStatus(completion.progressStatus, completion.status)
+      })))
     }
 
     if (req.method === 'POST') {
       if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
-      const { badgeName, category, reportUrl, reportName } = req.body || {}
-      if (!badgeName || !category || !reportUrl) return res.status(400).json({ error: 'Badge, category, and report are required' })
-      if (!isSafeReportDataUrl(reportUrl)) return res.status(400).json({ error: 'Report must be a supported PDF, Word document, or image under 10 MB' })
+      const { badgeName, category, progressStatus, reportUrl, reportName } = req.body || {}
+      const normalizedBadgeName = typeof badgeName === 'string' ? badgeName.trim() : ''
+      const normalizedCategory = typeof category === 'string' ? category.trim() : ''
+      if (!normalizedBadgeName || normalizedBadgeName.length > 120 || !normalizedCategory || normalizedCategory.length > 80) {
+        return res.status(400).json({ error: 'Badge and category are required.' })
+      }
+      if (!isBadgeProgressStatus(progressStatus)) return res.status(400).json({ error: 'Choose a valid badge progress stage.' })
+      if (reportUrl !== undefined && !isSafeReportDataUrl(reportUrl)) {
+        return res.status(400).json({ error: 'Evidence must be a supported PDF, Word document, or image under 10 MB.' })
+      }
+      if (reportName !== undefined && (typeof reportName !== 'string' || reportName.length > 255)) {
+        return res.status(400).json({ error: 'Evidence filename is invalid.' })
+      }
       const user = await prisma.user.findUnique({ where: { email } })
       if (!user) return res.status(404).json({ error: 'Account not found' })
+      const existing = await prisma.badgeCompletion.findUnique({
+        where: { userId_badgeName: { userId: user.id, badgeName: normalizedBadgeName } }
+      })
+      const updateData = {
+        progressStatus,
+        ...(reportUrl !== undefined ? { reportUrl: String(reportUrl), reportName: reportName ? String(reportName) : null } : {}),
+        ...(progressStatus === 'COMPLETED' && existing?.progressStatus !== 'COMPLETED' ? { completedAt: new Date() } : {})
+      }
       const completion = await prisma.badgeCompletion.upsert({
-        where: { userId_badgeName: { userId: user.id, badgeName: String(badgeName) } },
-        update: { reportUrl: String(reportUrl), reportName: reportName ? String(reportName) : null, status: 'PENDING', reviewedBy: null, reviewedAt: null },
-        create: { userId: user.id, badgeName: String(badgeName), category: String(category), reportUrl: String(reportUrl), reportName: reportName ? String(reportName) : null, status: 'PENDING' }
+        where: { userId_badgeName: { userId: user.id, badgeName: normalizedBadgeName } },
+        update: updateData,
+        create: {
+          userId: user.id,
+          badgeName: normalizedBadgeName,
+          category: normalizedCategory,
+          progressStatus,
+          status: progressStatus,
+          ...(reportUrl !== undefined ? { reportUrl: String(reportUrl), reportName: reportName ? String(reportName) : null } : {})
+        }
       })
       return res.status(201).json(completion)
     }
 
-    if (req.method === 'PATCH') {
-      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
-      if (!REVIEW_ROLES.includes(role)) return res.status(403).json({ error: 'Only the RSL or an administrator can review badges' })
-      const { id, status } = req.body || {}
-      if (!id || !['APPROVED', 'REJECTED'].includes(status)) return res.status(400).json({ error: 'Badge id and review status are required' })
-      const completion = await prisma.badgeCompletion.update({ where: { id: String(id) }, data: { status, reviewedBy: email, reviewedAt: new Date(), ...(status === 'APPROVED' ? {} : { completedAt: new Date() }) } })
-      return res.status(200).json(completion)
-    }
-
-    if (req.method === 'DELETE') {
-      if (!isSameOriginRequest(req.headers.origin, req.headers.host)) return res.status(403).json({ error: 'Cross-origin request blocked' })
-      const { badgeName } = req.body || {}
-      if (!badgeName) return res.status(400).json({ error: 'Badge name is required' })
-      const user = await prisma.user.findUnique({ where: { email } })
-      if (!user) return res.status(404).json({ error: 'Account not found' })
-      await prisma.badgeCompletion.delete({ where: { userId_badgeName: { userId: user.id, badgeName: String(badgeName) } } })
-      return res.status(200).json({ ok: true })
-    }
-
+    res.setHeader('Allow', ['GET', 'POST'])
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
     console.error('badges api error', error)
-    return res.status(500).json({ error: 'Unable to process badge completion' })
+    return res.status(500).json({ error: 'Unable to process badge progress' })
   }
 }

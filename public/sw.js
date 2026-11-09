@@ -27,11 +27,18 @@ self.addEventListener('push', (event) => {
     ? payload.url
     : '/'
 
-  event.waitUntil(self.registration.showNotification(title, {
-    body,
-    icon: '/scout.png',
-    badge: '/scout.png',
-    data: { path }
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const visibleClient = clients.find((client) => client.visibilityState === 'visible')
+    if (visibleClient) {
+      visibleClient.postMessage({ type: 'PUSH_ALERT', title, body, url: path })
+      return
+    }
+    return self.registration.showNotification(title, {
+      body,
+      icon: '/scout.png',
+      badge: '/scout.png',
+      data: { path }
+    })
   }))
 })
 

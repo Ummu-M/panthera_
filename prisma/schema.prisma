@@ -78,6 +78,17 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model EmailLoginCode {
+  email      String   @id
+  tokenHash  String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  lastSentAt DateTime
+  updatedAt  DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
 model Event {
   id          String   @id @default(uuid())
   title       String
@@ -129,11 +140,13 @@ model BadgeCompletion {
   badgeName   String
   category    String
   completedAt DateTime  @default(now())
-  reportName  String?
-  reportUrl   String?
-  reviewedAt  DateTime?
-  reviewedBy  String?
-  status      String    @default("PENDING")
+  updatedAt      DateTime  @default(now()) @updatedAt
+  reportName     String?
+  reportUrl      String?
+  reviewedAt     DateTime?
+  reviewedBy     String?
+  status         String    @default("PENDING")
+  progressStatus String    @default("IN_PROGRESS")
 
   @@unique([userId, badgeName])
   @@index([userId])

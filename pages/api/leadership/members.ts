@@ -46,13 +46,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const badges = await prisma.badgeCompletion.findMany({
       where: { userId: member.id },
-      select: { id: true, badgeName: true, category: true, reportName: true, reportUrl: true, status: true, completedAt: true },
+      select: { id: true, badgeName: true, category: true, reportName: true, reportUrl: true, status: true, progressStatus: true, updatedAt: true },
       orderBy: { completedAt: 'desc' }
     })
 
     return res.status(200).json({ member, badges })
   } catch (error) {
     console.error('leadership members api error', error)
-    return res.status(500).json({ error: 'Unable to load member details and badge reports' })
+    return res.status(500).json({ error: 'Unable to load member details and badge progress' })
   }
 }

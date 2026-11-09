@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
+import { LogOut } from 'lucide-react'
 import { theme } from '@/lib/theme'
 
 const C = theme
@@ -122,6 +124,10 @@ export default function ProfileForm({ profile }: { profile: ProfileData }) {
       </form>
 
       {message ? <div style={{ marginTop: 16, color: C.gold600, fontSize: 13 }}>{message}</div> : null}
+      <button type="button" className="profile-signout" onClick={() => signOut({ callbackUrl: '/' })}>
+        <LogOut size={17} aria-hidden="true" />
+        Sign out
+      </button>
     </section>
   )
 }

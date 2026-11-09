@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
-import { normalizeNotificationUrl, sendPushBroadcast } from '@/lib/push-notifications'
+import { normalizeNotificationUrl, PushConfigurationError, sendPushBroadcast } from '@/lib/push-notifications'
 import { isSameOriginRequest } from '@/lib/security'
 
 const ALLOWED_ROLES = ['SYSTEM_ADMIN', 'SECRETARY', 'RSL']
@@ -27,9 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = await sendPushBroadcast({ title, body, url: normalizeNotificationUrl(req.body?.url) })
     return res.status(200).json(result)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to send notifications.'
-    const status = message.includes('not configured') ? 503 : 500
     console.error('notification broadcast error', error)
-    return res.status(status).json({ error: message })
+    const status = error instanceof PushConfigurationError ? 503 : 500
+    return res.status(status).json({ error: 'Unable to send notifications.' })
   }
 }

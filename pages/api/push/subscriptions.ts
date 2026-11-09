@@ -3,19 +3,11 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isSameOriginRequest } from '@/lib/security'
+import { isValidPushEndpoint } from '@/lib/push-notifications'
 
 type SubscriptionInput = {
   endpoint?: unknown
   keys?: { p256dh?: unknown; auth?: unknown }
-}
-
-function validEndpoint(value: unknown): value is string {
-  if (typeof value !== 'string' || value.length > 2048) return false
-  try {
-    return new URL(value).protocol === 'https:'
-  } catch {
-    return false
-  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -28,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     const endpoint = typeof req.query.endpoint === 'string' ? req.query.endpoint : ''
-    if (!validEndpoint(endpoint)) return res.status(400).json({ error: 'A valid push endpoint is required.' })
+    if (!isValidPushEndpoint(endpoint)) return res.status(400).json({ error: 'A valid push endpoint is required.' })
     const subscription = await prisma.pushSubscription.findFirst({ where: { endpoint, userId: user.id }, select: { id: true } })
     return res.status(200).json({ enabled: !!subscription })
   }
@@ -44,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const endpoint = subscription?.endpoint
     const p256dh = subscription?.keys?.p256dh
     const auth = subscription?.keys?.auth
-    if (!validEndpoint(endpoint) || typeof p256dh !== 'string' || p256dh.length > 256 || typeof auth !== 'string' || auth.length > 256) {
+    if (!isValidPushEndpoint(endpoint) || typeof p256dh !== 'string' || p256dh.length > 256 || typeof auth !== 'string' || auth.length > 256) {
       return res.status(400).json({ error: 'Invalid push subscription.' })
     }
 
@@ -57,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const endpoint = req.body?.endpoint
-  if (!validEndpoint(endpoint)) return res.status(400).json({ error: 'A valid push endpoint is required.' })
+  if (!isValidPushEndpoint(endpoint)) return res.status(400).json({ error: 'A valid push endpoint is required.' })
   await prisma.pushSubscription.deleteMany({ where: { endpoint, userId: user.id } })
   return res.status(200).json({ enabled: false })
 }

@@ -3,22 +3,20 @@
 import { FormEvent, useState } from 'react'
 import { Send } from 'lucide-react'
 import { theme } from '@/lib/theme'
+import { useCrewAlert } from '@/app/components/CrewAlertProvider'
 
 const C = theme
 
 export default function NotificationComposer() {
+  const { showAlert } = useCrewAlert()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [url, setUrl] = useState('/dashboard')
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
-  const [isError, setIsError] = useState(false)
 
   const send = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
-    setMessage('')
-    setIsError(false)
     try {
       const response = await fetch('/api/admin/notifications', {
         method: 'POST',
@@ -26,13 +24,12 @@ export default function NotificationComposer() {
         body: JSON.stringify({ title, body, url })
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Could not send notifications.')
-      setMessage(`Sent to ${data.sent} device${data.sent === 1 ? '' : 's'}${data.failed ? `; ${data.failed} failed` : ''}.`)
+      if (!response.ok) throw new Error('Send failed.')
+      showAlert(`Sent to ${data.sent} device${data.sent === 1 ? '' : 's'}${data.failed ? `; ${data.failed} failed` : ''}.`, 'success')
       setTitle('')
       setBody('')
-    } catch (error) {
-      setIsError(true)
-      setMessage(error instanceof Error ? error.message : 'Could not send notifications.')
+    } catch {
+      showAlert("Couldn't send notifications. Try again.", 'error')
     } finally {
       setBusy(false)
     }
@@ -65,7 +62,6 @@ export default function NotificationComposer() {
           {busy ? 'Sending…' : 'Send notification'}
         </button>
       </div>
-      {message && <p role={isError ? 'alert' : 'status'} aria-live="polite" style={{ margin: '16px 0 0', color: isError ? '#8c2f26' : '#1f6849', fontSize: 13 }}>{message}</p>}
     </form>
   )
 }

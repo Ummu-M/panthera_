@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { getProviders, signIn, signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import {
   Calendar, Clock, MapPin, Mail, Music2, Users, Shield,
   Plus, Trash2, Tag, Image as ImageIcon, Upload, Pencil, Check, X
 } from 'lucide-react'
-import { FaGoogle, FaInstagram, FaWhatsapp } from 'react-icons/fa'
+import { FaInstagram, FaWhatsapp } from 'react-icons/fa'
 import { theme } from '@/lib/theme'
 import { DEFAULT_LEADERSHIP } from '@/lib/leadership'
+import type { LeadershipEntry } from '@/lib/leadership'
 import { getMissingRequiredRegistrationFields } from '@/lib/registration-identity'
 import { CrewCard, CrewEmptyState, InitialsBadge } from '@/app/components/CrewCard'
 
@@ -66,6 +67,17 @@ const secondaryBtn = {
   cursor: 'pointer'
 } as const
 
+function GoogleMark() {
+  return (
+    <svg className="auth-google-icon" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z" />
+      <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44Z" />
+      <path fill="#FBBC05" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.3H5.8a20 20 0 0 0 0 17.8l6.8-5.3Z" />
+      <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.1l6.8 5.3C14.2 15.6 18.7 12 24 12Z" />
+    </svg>
+  )
+}
+
 export default function AuthPage() {
   const { data: session, status } = useSession()
   const [view, setView] = useState<'landing' | 'signin' | 'join'>('landing')
@@ -78,6 +90,9 @@ export default function AuthPage() {
   const [year, setYear] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
+  const [emailSignInAvailable, setEmailSignInAvailable] = useState<boolean | null>(null)
+  const [emailCodeSent, setEmailCodeSent] = useState(false)
+  const [emailCode, setEmailCode] = useState('')
   const authDialogRef = useRef<HTMLDivElement>(null)
 
   const isLoggedIn = useMemo(() => status === 'authenticated' && !!session, [session, status])
@@ -87,6 +102,18 @@ export default function AuthPage() {
   const canManageEvents = isAdmin || role === 'OG'
   const canEditLeadership = role === 'RSL' || role === 'CREW_LEADER'
   const isPending = role === 'PENDING' || membershipStatus === 'pending'
+
+  useEffect(() => {
+    let active = true
+    void getProviders()
+      .then((providers) => {
+        if (active) setEmailSignInAvailable(!!providers?.['email-code'])
+      })
+      .catch(() => {
+        if (active) setEmailSignInAvailable(false)
+      })
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (view !== 'signin' && view !== 'join') return
@@ -134,7 +161,7 @@ export default function AuthPage() {
   const [photoCaption, setPhotoCaption] = useState('')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoMsg, setPhotoMsg] = useState('')
-  const [leadership, setLeadership] = useState(() => DEFAULT_LEADERSHIP.map((leader) => ({ ...leader })))
+  const [leadership, setLeadership] = useState<LeadershipEntry[]>(() => DEFAULT_LEADERSHIP.map((leader) => ({ ...leader, assigned: false })))
   const [editingLeader, setEditingLeader] = useState<string | null>(null)
   const [leaderNameDraft, setLeaderNameDraft] = useState('')
   const [leadershipMsg, setLeadershipMsg] = useState('')
@@ -153,12 +180,27 @@ export default function AuthPage() {
       .catch(() => setPhotos([]))
       .finally(() => setPhotosLoading(false))
 
-    fetch('/api/leadership')
-      .then((r) => r.json())
-      .then((data) => {
+    const refreshLeadership = async () => {
+      try {
+        const response = await fetch('/api/leadership', { cache: 'no-store' })
+        if (!response.ok) return
+        const data = await response.json()
         if (Array.isArray(data)) setLeadership(data)
-      })
-      .catch(() => {})
+      } catch {
+        // Keep the last loaded roster visible if a refresh fails.
+      }
+    }
+
+    void refreshLeadership()
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refreshLeadership()
+    }
+    window.addEventListener('focus', refreshLeadership)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('focus', refreshLeadership)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [])
 
   const saveLeaderName = async (roleKey: string) => {
@@ -175,7 +217,7 @@ export default function AuthPage() {
         setLeadershipMsg(data?.error || 'Unable to update this name.')
         return
       }
-      setLeadership((current) => current.map((leader) => leader.roleKey === roleKey ? data : leader))
+      setLeadership((current) => current.map((leader) => leader.roleKey === roleKey ? { ...data, assigned: false } : leader))
       setEditingLeader(null)
       setLeadershipMsg('Crew roster updated.')
     } catch {
@@ -372,7 +414,7 @@ export default function AuthPage() {
     )
   }
 
-  if (isLoggedIn && isAdmin) return null
+  if (isLoggedIn && role !== 'OG') return null
 
   if (isLoggedIn) {
     return (
@@ -432,7 +474,7 @@ export default function AuthPage() {
                 void signIn('google', { callbackUrl: '/' }).finally(() => setAuthLoading(false))
               }}
             >
-              <span className="auth-google-icon" aria-hidden="true"><FaGoogle size={15} /></span>
+              <GoogleMark />
               {authLoading ? 'Opening Google…' : 'Continue with Google'}
             </button>
 
@@ -443,24 +485,85 @@ export default function AuthPage() {
               id="signin-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setEmailCodeSent(false)
+                setEmailCode('')
+              }}
               placeholder="you@example.com"
               autoComplete="email"
               className="auth-input"
             />
 
+            {emailSignInAvailable === false ? (
+              <p className="auth-email-unavailable" role="status">
+                Email verification codes are not configured yet. Use Google for now.
+              </p>
+            ) : null}
+            {emailCodeSent ? (
+              <>
+                <label className="auth-label" htmlFor="signin-code">Verification code</label>
+                <input
+                  id="signin-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={emailCode}
+                  onChange={(event) => setEmailCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter 6-digit code"
+                  className="auth-input"
+                />
+              </>
+            ) : null}
             <button
+              type="button"
               className="auth-email-button"
-              disabled={authLoading}
-              onClick={() => {
+              disabled={authLoading || emailSignInAvailable !== true}
+              onClick={async () => {
                 if (!email.trim()) {
                   setStatusMessage('Please enter your email first.')
                   return
                 }
-                setStatusMessage('Use the Google sign-in for full access. Or create an account below.')
+                setAuthLoading(true)
+                setStatusMessage('')
+                try {
+                  if (!emailCodeSent) {
+                    const response = await fetch('/api/auth/email-code', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: email.trim() })
+                    })
+                    const data = await response.json()
+                    if (!response.ok) throw new Error(data?.error || 'Unable to send a verification code.')
+                    setEmailCodeSent(true)
+                    setStatusMessage(data.message || 'If an account exists for that email, a sign-in code has been sent.')
+                  } else {
+                    if (!/^\d{6}$/.test(emailCode)) {
+                      setStatusMessage('Enter the 6-digit verification code.')
+                      return
+                    }
+                    const result = await signIn('email-code', {
+                      email: email.trim(),
+                      code: emailCode,
+                      callbackUrl: '/',
+                      redirect: false
+                    })
+                    if (result?.error) {
+                      setStatusMessage("That code couldn't be verified. Check it or request a new one.")
+                      return
+                    }
+                    window.location.assign(result?.url || '/')
+                  }
+                } catch {
+                  setStatusMessage(emailCodeSent ? "That code couldn't be verified. Check it or request a new one." : "Couldn't send a verification code. Please try again.")
+                } finally {
+                  setAuthLoading(false)
+                }
               }}
             >
-              Continue with email
+              {authLoading ? (emailCodeSent ? 'Verifying code…' : 'Sending code…') : emailCodeSent ? 'Verify and sign in' : 'Continue with email'}
             </button>
           </div>
 
@@ -505,7 +608,7 @@ export default function AuthPage() {
                 void signIn('google', { callbackUrl: '/profile' }).finally(() => setAuthLoading(false))
               }}
             >
-              <span className="auth-google-icon" aria-hidden="true"><FaGoogle size={15} /></span>
+              <GoogleMark />
               {authLoading ? 'Opening Google…' : 'Join with Google'}
             </button>
 
@@ -693,7 +796,7 @@ export default function AuthPage() {
                   )}
                   <div style={{ fontSize: 11.5, color: C.muted, marginTop: 1 }}>{leaderRole}</div>
                 </div>
-                {canEditLeadership ? editingLeader === roleKey ? (
+                {canEditLeadership && !leadership.find((entry) => entry.roleKey === roleKey)?.assigned ? editingLeader === roleKey ? (
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button type="button" title="Save name" aria-label="Save name" disabled={savingLeader} onClick={() => void saveLeaderName(roleKey)} style={{ border: 0, background: 'transparent', color: C.gold600, cursor: 'pointer', padding: 5 }}><Check size={17} /></button>
                     <button type="button" title="Cancel edit" aria-label="Cancel edit" onClick={() => setEditingLeader(null)} style={{ border: 0, background: 'transparent', color: C.muted, cursor: 'pointer', padding: 5 }}><X size={17} /></button>

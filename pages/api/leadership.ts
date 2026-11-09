@@ -1,19 +1,36 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/lib/auth'
-import { DEFAULT_LEADERSHIP, LEADERSHIP_EDITOR_ROLES } from '@/lib/leadership'
+import {
+  ASSIGNED_ROLE_BY_LEADERSHIP_KEY,
+  DEFAULT_LEADERSHIP,
+  LEADERSHIP_EDITOR_ROLES,
+  resolveLeadershipRoster
+} from '@/lib/leadership'
 import { prisma } from '@/lib/prisma'
 import { isSameOriginRequest } from '@/lib/security'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method === 'GET') {
-      const stored = await prisma.crewLeadership.findMany()
-      const namesByRole = new Map(stored.map((entry) => [entry.roleKey, entry.name]))
-      return res.status(200).json(DEFAULT_LEADERSHIP.map((leader) => ({
-        ...leader,
-        name: namesByRole.get(leader.roleKey) || leader.name
-      })))
+      res.setHeader('Cache-Control', 'no-store, max-age=0')
+      const [stored, assigned] = await Promise.all([
+        prisma.crewLeadership.findMany(),
+        prisma.user.findMany({
+          where: {
+            membershipStatus: { equals: 'approved', mode: 'insensitive' },
+            role: {
+              is: {
+                name: {
+                  in: [...new Set(Object.values(ASSIGNED_ROLE_BY_LEADERSHIP_KEY))]
+                }
+              }
+            }
+          },
+          select: { name: true, role: { select: { name: true } } }
+        })
+      ])
+      return res.status(200).json(resolveLeadershipRoster(stored, assigned))
     }
 
     if (req.method !== 'PATCH') {

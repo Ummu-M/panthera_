@@ -28,6 +28,7 @@ export default function SiteNav() {
   const { data: session } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [memberNavTab, setMemberNavTab] = useState('home')
   const menuRef = useRef<HTMLDivElement>(null)
   const mobileToggleRef = useRef<HTMLButtonElement>(null)
   const mobileDrawerRef = useRef<HTMLElement>(null)
@@ -76,6 +77,20 @@ export default function SiteNav() {
     setMenuOpen(false)
   }, [pathname])
 
+  useEffect(() => {
+    const updateMemberTab = () => {
+      if (pathname === '/profile') {
+        setMemberNavTab('profile')
+        return
+      }
+      const requestedTab = new URLSearchParams(window.location.search).get('tab')
+      setMemberNavTab(['events', 'badges', 'profile'].includes(requestedTab || '') ? requestedTab || 'home' : 'home')
+    }
+    updateMemberTab()
+    window.addEventListener('popstate', updateMemberTab)
+    return () => window.removeEventListener('popstate', updateMemberTab)
+  }, [pathname])
+
   // No session yet, or on the login/landing page: don't show an app nav.
   if (!session || pathname === '/' || pathname?.startsWith('/access-denied')) return null
 
@@ -96,20 +111,28 @@ export default function SiteNav() {
     ...(canViewMemberDirectory ? [{ href: '/admin/members', label: 'Members', icon: Users }] : []),
     ...(role === 'TREASURER' ? [{ href: '/admin/treasury', label: 'Treasury', icon: WalletCards }] : []),
     ...(role === 'QUARTERMASTER' ? [{ href: '/admin/inventory', label: 'Inventory', icon: Package }] : []),
-    ...(isBadgeReviewer && !isAdmin ? [{ href: '/admin/badges', label: 'Badge reports', icon: BadgeCheck }] : []),
+    ...(isBadgeReviewer && !isAdmin ? [{ href: '/admin/badges', label: 'Badge progress', icon: BadgeCheck }] : []),
     ...(role === 'OG' ? [{ href: '/', label: 'Events', icon: CalendarDays }] : [])
   ]
+  const mobileMemberLinks = [
+    { href: '/dashboard', tab: 'home', label: 'Home', icon: Home },
+    { href: '/dashboard?tab=events', tab: 'events', label: 'Events', icon: CalendarDays },
+    { href: '/dashboard?tab=badges', tab: 'badges', label: 'Badges', icon: BadgeCheck },
+    { href: '/dashboard?tab=profile', tab: 'profile', label: 'Profile', icon: User }
+  ]
+  const showMemberBottomNav = !isAdmin && (pathname === '/dashboard' || pathname === '/profile')
 
   return (
-    <div
-      className="site-nav"
-      style={{
-        position: 'sticky', top: 0, zIndex: 30,
-        background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(6px)',
-        borderBottom: `1px solid ${C.border}`,
-        padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-      }}
-    >
+    <div className="site-nav-shell">
+      <div
+        className={showMemberBottomNav ? 'site-nav member-nav-header' : 'site-nav'}
+        style={{
+          position: 'sticky', top: 0, zIndex: 30,
+          background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(6px)',
+          borderBottom: `1px solid ${C.border}`,
+          padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}
+      >
       <button
         ref={mobileToggleRef}
         type="button"
@@ -124,7 +147,7 @@ export default function SiteNav() {
       <div className="site-nav-brand-and-links">
         <div className="site-nav-brand">
           <img src="/pantheralogo.png" alt="" />
-          <span className="site-nav-brand-name">Panthera Crew</span>
+          <span className="site-nav-brand-name">Panthera Rover Crew</span>
         </div>
         <div className="site-nav-links" style={{ display: 'flex', gap: 4, overflowX: 'auto', minWidth: 0, scrollbarWidth: 'thin' }}>
           {links.map(({ href, label, icon: Icon }) => {
@@ -204,6 +227,7 @@ export default function SiteNav() {
           </div>
         )}
       </div>
+      </div>
       {mobileMenuOpen && <>
         <button
           type="button"
@@ -215,7 +239,7 @@ export default function SiteNav() {
           <div className="site-nav-drawer-brand">
             <img src="/pantheralogo.png" alt="" />
             <div>
-              <strong>Panthera Crew</strong>
+              <strong>Panthera Rover Crew</strong>
               <span>Kenyatta University</span>
             </div>
           </div>
@@ -257,6 +281,35 @@ export default function SiteNav() {
           </div>
         </aside>
       </>}
+      {showMemberBottomNav && (
+        <nav className="member-bottom-nav" aria-label="Member navigation">
+          {mobileMemberLinks.map(({ href, tab, label, icon: Icon }) => {
+            const active = memberNavTab === tab
+            return (
+              <Link
+                key={tab}
+                href={href}
+                aria-current={active ? 'page' : undefined}
+                onClick={(event) => {
+                  setMemberNavTab(tab)
+                  if (pathname === '/dashboard' && href.startsWith('/dashboard')) {
+                    event.preventDefault()
+                    const url = new URL(window.location.href)
+                    if (tab === 'home') url.searchParams.delete('tab')
+                    else url.searchParams.set('tab', tab)
+                    window.history.pushState(null, '', `${url.pathname}${url.search}${url.hash}`)
+                    window.dispatchEvent(new CustomEvent('panthera-member-tab-change', { detail: tab }))
+                  }
+                }}
+                className={active ? 'member-bottom-nav-link active' : 'member-bottom-nav-link'}
+              >
+                <Icon size={19} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      )}
     </div>
   )
 }

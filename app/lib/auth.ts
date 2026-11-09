@@ -1,7 +1,9 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
+import { EMAIL_LOGIN_CODE_MAX_ATTEMPTS, normalizeLoginEmail, verifyEmailLoginCode } from '@/lib/email-login-code'
 
 async function resolveUserRole(email?: string | null) {
   if (!email) return 'PENDING'
@@ -71,9 +73,80 @@ export const authOptions: NextAuthOptions = {
     },
   },
   providers: [
+    ...(process.env.EMAIL_SERVER && process.env.EMAIL_FROM
+      ? [CredentialsProvider({
+          id: 'email-code',
+          name: 'Email verification code',
+          credentials: {
+            email: { label: 'Email', type: 'email' },
+            code: { label: 'Verification code', type: 'text' }
+          },
+          async authorize(credentials) {
+            const email = normalizeLoginEmail(credentials?.email)
+            const code = credentials?.code
+            const secret = process.env.NEXTAUTH_SECRET
+            if (!email || !code || !secret) return null
+
+            const codeRecord = await prisma.emailLoginCode.findUnique({ where: { email } })
+            if (!codeRecord || codeRecord.expiresAt <= new Date() || codeRecord.attempts >= EMAIL_LOGIN_CODE_MAX_ATTEMPTS) {
+              return null
+            }
+
+            if (!verifyEmailLoginCode(email, code, codeRecord.tokenHash, secret)) {
+              await prisma.emailLoginCode.updateMany({
+                where: {
+                  email,
+                  tokenHash: codeRecord.tokenHash,
+                  attempts: { lt: EMAIL_LOGIN_CODE_MAX_ATTEMPTS }
+                },
+                data: { attempts: { increment: 1 } }
+              })
+              return null
+            }
+
+            const consumed = await prisma.emailLoginCode.deleteMany({
+              where: {
+                email,
+                tokenHash: codeRecord.tokenHash,
+                expiresAt: { gt: new Date() },
+                attempts: { lt: EMAIL_LOGIN_CODE_MAX_ATTEMPTS }
+              }
+            })
+            if (consumed.count !== 1) return null
+
+            const isConfiguredAdmin = !!process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL.trim().toLowerCase()
+            if (isConfiguredAdmin) await resolveUserRole(email)
+
+            const user = await prisma.user.findUnique({
+              where: { email },
+              select: { id: true, email: true, name: true }
+            })
+            if (!user) return null
+
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { emailVerified: new Date() }
+            })
+            return user
+          }
+        })]
+      : []),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ''
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        if (!profile.email || profile.email_verified !== true) {
+          throw new Error('Google sign-in requires a verified email address')
+        }
+
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture
+        }
+      }
     })
   ],
   adapter: PrismaAdapter(prisma as any),

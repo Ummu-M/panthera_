@@ -926,7 +926,7 @@ function AdminScouts({ pending, setPending, approved, setApproved, rejected, set
             )}
             {tab === "approved" && <div style={{ fontSize: 11, color: C.green, marginTop: 4 }}>Approved {a.approvedOn}</div>}
             {tab === "rejected" && <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>Rejected {a.rejectedOn}</div>}
-            {tab === "all" && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Joined: {a.joinDate} · Badges: {a.badges} · Svc Hrs: {a.serviceHrs}</div>}
+            {tab === "all" && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Joined: {a.joinDate} · Badges: {a.badges}</div>}
           </div>
         ))}
       </div>
@@ -1236,7 +1236,7 @@ function MemberHome({ member, setScreen }) {
           <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: ".1em" }}>Welcome back, Rover</div>
           <div style={{ fontWeight: 900, fontSize: 22, marginTop: 2 }}>{member.name}</div>
           <div style={{ display: "flex", gap: 18, marginTop: 12 }}>
-            {[["0", "Activities"], ["0", "Badges"], ["0", "Svc Hrs"]].map(([n, l]) => (
+            {[["0", "Activities"], ["0", "Badges"]].map(([n, l]) => (
               <div key={l} style={{ textAlign: "center" }}><div style={{ fontWeight: 900, fontSize: 20, color: C.gold }}>{n}</div><div style={{ fontSize: 9, color: C.muted, textTransform: "uppercase", letterSpacing: ".08em"}}>{l}</div></div>
             ))}
           </div>
@@ -1393,10 +1393,10 @@ function MemberProfile({ member, setScreen }) {
         <div style={{ color: C.gold, fontSize: 10, letterSpacing: ".16em", textTransform: "uppercase", marginTop: 3 }}>Panthera Rover Crew</div>
       </div>
       <div style={{ padding: "14px 18px 100px", overflowY: "auto", maxHeight: 490 }}>
-        {[["Full Name", member.name], ["Email", member.email], ["Reg. No.", member.regno || "Not set"], ["Campus", member.uni || "Kenyatta University"], ["Year", member.year || "Not set"], ["Service Hours", "0 hrs"], ["Joined", new Date().getFullYear()]].map(([lbl, val]) => (
+        {[["Full Name", member.name], ["Email", member.email], ["Reg. No.", member.regno || "Not set"], ["Campus", member.uni || "Kenyatta University"], ["Year", member.year || "Not set"], ["Joined", new Date().getFullYear()]].map(([lbl, val]) => (
           <div key={lbl} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: `1px solid ${C.border}` }}>
             <span style={{ fontSize: 11, color: C.muted }}>{lbl}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: ["Reg. No.", "Service Hours"].includes(lbl) ? C.gold : C.text }}>{val}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: lbl === "Reg. No." ? C.gold : C.text }}>{val}</span>
           </div>
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: `1px solid ${C.border}` }}>

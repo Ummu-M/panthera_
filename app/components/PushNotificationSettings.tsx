@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Bell, BellOff } from 'lucide-react'
 import { theme } from '@/lib/theme'
+import { useCrewAlert } from './CrewAlertProvider'
 
 const C = theme
 
@@ -15,10 +16,10 @@ function decodeApplicationServerKey(value: string) {
 }
 
 export default function PushNotificationSettings() {
+  const { showAlert } = useCrewAlert()
   const [supported, setSupported] = useState<boolean | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
 
   useEffect(() => {
     let active = true
@@ -36,28 +37,25 @@ export default function PushNotificationSettings() {
         const data = await response.json()
         if (active && response.ok) setEnabled(!!data.enabled)
       } catch {
-        if (active) setMessage('Could not check this device’s notification settings.')
+        if (active) showAlert("Couldn't check this device's notification settings. Try again.", 'error')
       }
     }
 
     void checkSubscription()
     return () => { active = false }
-  }, [])
+  }, [showAlert])
 
   const enable = async () => {
     setBusy(true)
-    setMessage('')
     let createdSubscription = false
     try {
-      if (Notification.permission === 'denied') {
-        throw new Error('Notifications are blocked in your browser settings.')
-      }
+      if (Notification.permission === 'denied') throw new Error('blocked')
       const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
-      if (permission !== 'granted') throw new Error('Allow notifications in your browser to enable crew updates.')
+      if (permission !== 'granted') throw new Error('permission')
 
       const keyResponse = await fetch('/api/push/public-key')
       const keyData = await keyResponse.json()
-      if (!keyResponse.ok || !keyData.publicKey) throw new Error(keyData.error || 'Push notifications are not configured yet.')
+      if (!keyResponse.ok || !keyData.publicKey) throw new Error('configuration')
 
       const registration = await navigator.serviceWorker.ready
       let subscription = await registration.pushManager.getSubscription()
@@ -74,17 +72,24 @@ export default function PushNotificationSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subscription.toJSON())
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Could not save this device.')
+      if (!response.ok) throw new Error('save')
       setEnabled(true)
-      setMessage('This device will receive crew updates.')
+      showAlert('Notifications enabled on this device.', 'success')
     } catch (error) {
       if (createdSubscription) {
         const registration = await navigator.serviceWorker.ready.catch(() => null)
         const subscription = await registration?.pushManager.getSubscription().catch(() => null)
         await subscription?.unsubscribe().catch(() => false)
       }
-      setMessage(error instanceof Error ? error.message : 'Could not enable notifications.')
+      const reason = error instanceof Error ? error.message : ''
+      const message = reason === 'blocked'
+        ? 'Notifications are blocked in your browser settings.'
+        : reason === 'permission'
+          ? 'Allow notifications in your browser to enable crew updates.'
+          : reason === 'configuration'
+            ? 'Notifications are temporarily unavailable. Please try again later.'
+            : "Couldn't enable notifications. Try again."
+      showAlert(message, 'error')
     } finally {
       setBusy(false)
     }
@@ -92,7 +97,6 @@ export default function PushNotificationSettings() {
 
   const disable = async () => {
     setBusy(true)
-    setMessage('')
     try {
       const registration = await navigator.serviceWorker.ready
       const subscription = await registration.pushManager.getSubscription()
@@ -102,14 +106,13 @@ export default function PushNotificationSettings() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ endpoint: subscription.endpoint })
         })
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Could not remove this device.')
+        if (!response.ok) throw new Error('remove')
         await subscription.unsubscribe()
       }
       setEnabled(false)
-      setMessage('Notifications are off for this device.')
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not disable notifications.')
+      showAlert('Notifications are off for this device.', 'success')
+    } catch {
+      showAlert("Couldn't turn off notifications. Try again.", 'error')
     } finally {
       setBusy(false)
     }
@@ -138,7 +141,6 @@ export default function PushNotificationSettings() {
           </button>
         )}
       </div>
-      {message && <p role="status" aria-live="polite" style={{ margin: '12px 0 0 30px', color: message.includes('Could not') || message.includes('blocked') || message.includes('not configured') ? '#8c2f26' : C.muted, fontSize: 12.5 }}>{message}</p>}
     </section>
   )
 }

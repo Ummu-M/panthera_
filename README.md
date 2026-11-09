@@ -9,11 +9,12 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 - Membership registration and approval workflow
 - Role-based access control for crew leadership roles
 - Member dashboard and profile management
-- Leadership member directory with clickable approved-member tags and uploaded badge reports
+- Leadership member directory with clickable approved-member tags and badge progress
 - Event creation and management
 - Photo gallery management
 - Administrator member management
 - Optional browser push notifications for members and crew broadcasts for authorized admins
+- Member-managed badge progress with a read-only RSL progress view
 - Responsive App Router interface
 
 ## Tech Stack
@@ -50,6 +51,8 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
    GOOGLE_CLIENT_ID="your-google-client-id"
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
    ADMIN_EMAIL="admin@example.com"
+   EMAIL_SERVER="smtps://username:password@smtp.example.com:465"
+   EMAIL_FROM="Panthera Rover Crew <login@example.com>"
    VAPID_PUBLIC_KEY="your-web-push-public-key"
    VAPID_PRIVATE_KEY="your-web-push-private-key"
    VAPID_SUBJECT="mailto:kupantherascouts@gmail.com"
@@ -57,15 +60,24 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 
    `DATABASE_URL` uses Supabase's IPv4 shared transaction pooler. `DIRECT_URL` uses the session-mode pooler for Prisma migration commands. Keep `.env` private and never commit credentials.
 
-   Generate a VAPID key pair once with `npx web-push generate-vapid-keys`, then keep the same keys in development and production. Push notifications require HTTPS in production; localhost is allowed for development.
+   Passwordless email sign-in is enabled when both `EMAIL_SERVER` and `EMAIL_FROM` are configured. Use the SMTP connection URL and sender address from your mail provider, and URL-encode special characters in the SMTP username or password. Email sign-in sends a six-digit code that expires after 10 minutes and allows up to five verification attempts.
 
-   If `/api/push/public-key` responds with `503`, configure both VAPID keys above and restart the app. Members must enable notifications on each device, and admins can only reach devices with a saved subscription.
+   Generate a VAPID key pair with `npx web-push generate-vapid-keys`. Set these three variables in the local `.env` and add the same names to your hosting provider's environment settings:
+
+   - `VAPID_PUBLIC_KEY`
+   - `VAPID_PRIVATE_KEY`
+   - `VAPID_SUBJECT` (a contact URI, for example `mailto:crew@example.com`)
+
+   Keep the private key secret; never commit real key values. Push notifications require HTTPS in production; localhost is allowed for development.
+
+   If `/api/push/public-key` responds with `503`, configure all three VAPID variables and restart the app. Members must enable notifications on each device, and admins can only reach devices with a saved subscription. Once enabled, use **Send test notification** in the member dashboard's Profile tab to verify delivery to that device.
 
 3. Generate the Prisma client and apply the schema:
 
    ```bash
    npx prisma generate
    npx prisma db push
+   npx prisma db execute --schema prisma\schema.prisma --file prisma\backfill-badge-progress.sql
    npm run seed
    ```
 
@@ -98,18 +110,18 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 - `/admin` - Administrator dashboard
 - `/admin/notifications` - Send a browser push notification to opted-in devices
 - `/admin/users` - Member administration
-- `/admin/members` - Read-only directory of approved members and their badge reports for crew leadership
+- `/admin/members` - Read-only directory of approved members and their badge progress for crew leadership
 - `/access-denied` - Unauthorized access page
 - `/privacy` - Privacy policy
 - `/terms` - Terms of service
 
 API endpoints are available under `/api`, including authentication, registration, profile, events, gallery, administrator members, and leadership member details.
 
-The crew member directory is available to system administrators, the secretary, the Rover Scout Leader, the Crew Leader, and the Assistant Crew Leader. Only approved members appear; selecting a member loads their details and uploaded badge reports.
+The crew member directory is available to system administrators, the secretary, the Rover Scout Leader, the Crew Leader, and the Assistant Crew Leader. Only approved members appear; selecting a member loads their details and badge progress.
 
 Crew applications require a full name, valid email address, phone number, student/registration number, school/faculty, course/programme, and year of study before submission. System administrator accounts are kept separate from student member lists and counts.
 
-Members can upload PDF, Word, JPEG, PNG, or WebP badge reports up to 10 MB from the Badges tab on `/dashboard`; submissions are sent to the RSL for review. Members enable or disable push notifications from the Profile tab on `/dashboard`. Authorized admins can broadcast a title, message, and internal destination from `/admin/notifications`. Delivery only targets devices that opted in; expired browser subscriptions are removed automatically.
+Members set badge progress to Not started, In progress, or Completed and can attach PDF, Word, JPEG, PNG, or WebP evidence up to 10 MB from the Badges tab on `/dashboard`. The RSL's `/admin/badges` page is read-only. The schema adds `progressStatus` and `updatedAt` without removing the legacy review fields or records; after `prisma db push`, run the one-time backfill command above to map old approved rows to Completed. Members enable or disable push notifications from the Profile tab on `/dashboard`. Authorized admins can broadcast a title, message, and internal destination from `/admin/notifications`. Delivery only targets devices that opted in; expired browser subscriptions are removed automatically.
 
 ## Roles and Access
 

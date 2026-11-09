@@ -26,7 +26,7 @@ export default async function ProfilePage() {
 
   if (!email) {
     return (
-      <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.forest950, color: C.text, padding: 24, fontFamily: 'var(--font-body)' }}>
+      <main className="member-profile-main" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.forest950, color: C.text, padding: 24, fontFamily: 'var(--font-body)' }}>
         <div style={{ maxWidth: 520, background: '#ffffff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 30, boxShadow: '0 14px 36px rgba(18,36,53,0.1)' }}>
           {profileWarning || 'Please sign in to view your profile.'}
         </div>
@@ -44,7 +44,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
+    <main className="member-profile-main" style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${C.forest950} 0%, ${C.forest900} 100%)`, color: C.text, padding: '32px 24px', fontFamily: 'var(--font-body)' }}>
       <div style={{ maxWidth: 980, margin: '0 auto' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8, paddingBottom: 20, borderBottom: `1px solid ${C.border}` }}>
           <img src="/pantheralogo.png" alt="Panthera crest" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 3 }} />
