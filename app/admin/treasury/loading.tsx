@@ -6,7 +6,7 @@ export default function TreasuryLoading() {
       <div style={{ margin: '0 auto', maxWidth: 1200 }}>
         <div className="admin-skeleton" style={{ height: 72, maxWidth: 460 }} />
         <div className="treasury-stat-grid" style={{ marginTop: 24 }}>
-          {[0, 1, 2, 3].map((item) => <div key={item} className="admin-skeleton" style={{ height: item === 0 ? 120 : 96 }} />)}
+          {[0, 1, 2, 3].map((item) => <div key={item} className="admin-skeleton" style={{ height: 96 }} />)}
         </div>
         <div className="admin-skeleton" style={{ height: 260, marginTop: 20 }} />
         <div className="admin-skeleton" style={{ height: 360, marginTop: 20 }} />

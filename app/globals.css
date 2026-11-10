@@ -1862,11 +1862,7 @@ img {
 .treasury-stat-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
-}
-
-.treasury-stat-grid > :first-child {
-  grid-row: span 2;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .treasury-entry-form {
@@ -2007,11 +2003,6 @@ img {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .treasury-stat-grid > :first-child {
-    grid-column: span 2;
-    grid-row: auto;
-  }
-
   .admin-toolbar > * {
     flex: 1 1 145px !important;
     min-width: 0;
@@ -2042,10 +2033,6 @@ img {
 @media (max-width: 420px) {
   .treasury-stat-grid {
     grid-template-columns: 1fr;
-  }
-
-  .treasury-stat-grid > :first-child {
-    grid-column: auto;
   }
 
   .treasury-filter-toolbar {

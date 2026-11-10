@@ -160,7 +160,7 @@ export default function TreasuryPanel({ initialPayments, initialTotal, entryCoun
   return (
     <>
       <section className="treasury-stat-grid" aria-label="Treasury summary" style={{ marginTop: 24 }}>
-        <StatCard label="Current balance" value={formatKSh(balance)} primary />
+        <StatCard label="Current balance" value={formatKSh(balance)} />
         <StatCard label="Income" value={formatKSh(income)} />
         <StatCard label="Expenses" value={formatKSh(expenses)} />
         <StatCard label="Recorded entries" value={entryCount} />
