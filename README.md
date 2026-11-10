@@ -4,7 +4,8 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 
 ## Features
 
-- Google authentication with NextAuth
+- Google authentication with NextAuth (Google OAuth; no email verification code is sent)
+- Optional email sign-in with expiring six-digit verification codes over SMTP
 - Prisma ORM with PostgreSQL/Supabase
 - Membership registration and approval workflow
 - Role-based access control for crew leadership roles
@@ -60,7 +61,7 @@ A Next.js portal for the Kenyatta University Panthera Rover Crew. The app provid
 
    `DATABASE_URL` uses Supabase's IPv4 shared transaction pooler. `DIRECT_URL` uses the session-mode pooler for Prisma migration commands. Keep `.env` private and never commit credentials.
 
-   Passwordless email sign-in is enabled when both `EMAIL_SERVER` and `EMAIL_FROM` are configured. Use the SMTP connection URL and sender address from your mail provider, and URL-encode special characters in the SMTP username or password. Email sign-in sends a six-digit code that expires after 10 minutes and allows up to five verification attempts.
+   Passwordless email sign-in is enabled when both `EMAIL_SERVER` and `EMAIL_FROM` are configured. Use the SMTP connection URL and sender address from your mail provider, and URL-encode special characters in the SMTP username or password. Email sign-in sends a six-digit code that expires after 10 minutes and allows up to five verification attempts. Google sign-in is a separate OAuth option and does not use or send this code. Restart the dev server after changing environment variables.
 
    Generate a VAPID key pair with `npx web-push generate-vapid-keys`. Set these three variables in the local `.env` and add the same names to your hosting provider's environment settings:
 
